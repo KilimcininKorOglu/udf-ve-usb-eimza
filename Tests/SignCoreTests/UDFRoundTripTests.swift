@@ -46,4 +46,51 @@ struct UDFRoundTripTests {
         #expect(reparsed.text == "Merhaba dünya")
         #expect(reparsed == document)
     }
+
+    @Test("table, image and field elements round-trip")
+    func structuralElements() throws {
+        var document = UDFDocument()
+        document.text = "AB"
+        document.styles = [UDFStyle(name: "default", attributes: [])]
+        document.elements = [
+            .table(UDFTable(attributes: [UDFAttribute("tableName", "t1")], rows: [
+                UDFRow(attributes: [], cells: [
+                    UDFCell(attributes: [UDFAttribute("columnSpan", "1")], elements: [
+                        .paragraph(UDFParagraph(attributes: [UDFAttribute("resolver", "default")],
+                                                runs: [UDFContentRun(startOffset: 0, length: 1)])),
+                    ]),
+                ]),
+            ])),
+            .image(UDFImage(attributes: [UDFAttribute("imageData", "AAAA")])),
+            .field(UDFField(attributes: [UDFAttribute("fieldType", "date")],
+                            runs: [UDFContentRun(startOffset: 1, length: 1)])),
+        ]
+        let reparsed = try UDFReader.read(udf: try UDFWriter.write(document))
+        #expect(reparsed == document)
+    }
+
+    @Test("an unrecognised element is preserved verbatim")
+    func rawElementPreserved() throws {
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <template format_id="1.7" >
+        <content><![CDATA[X]]></content><properties><pageFormat mediaSizeName="1" /></properties>\
+        <styles><style name="default" /></styles>
+        <elements >
+        <header resolver="default"><content startOffset="0" length="1" /></header>
+        <paragraph resolver="default"><content startOffset="0" length="1" /></paragraph>
+        </elements>
+        </template>
+        """
+        let document = try UDFReader.parse(contentXML: Data(xml.utf8))
+        guard case .raw(let header)? = document.elements.first else {
+            Issue.record("ilk eleman raw header değil"); return
+        }
+        #expect(header.name == "header")
+        #expect(header.attributes.value("resolver") == "default")
+        #expect(header.children.first?.name == "content")
+
+        let reparsed = try UDFReader.read(udf: try UDFWriter.write(document))
+        #expect(reparsed == document)
+    }
 }

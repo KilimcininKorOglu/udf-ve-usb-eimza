@@ -59,8 +59,17 @@ public enum UDFReader {
         case "space":
             return .space(run(node))
         default:
-            return nil
+            return .raw(rawElement(node))
         }
+    }
+
+    private static func rawElement(_ node: RawNode) -> UDFRawElement {
+        UDFRawElement(
+            name: node.name,
+            attributes: node.attributes,
+            cdata: node.cdata,
+            children: node.children.map(rawElement)
+        )
     }
 
     private static func mapTable(_ node: RawNode) -> UDFTable {

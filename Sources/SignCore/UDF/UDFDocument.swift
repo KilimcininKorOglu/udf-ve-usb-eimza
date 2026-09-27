@@ -73,6 +73,25 @@ public indirect enum UDFElement: Equatable, Sendable {
     case image(UDFImage)
     case field(UDFField)
     case space(UDFContentRun)
+    /// Any element the typed mapping does not recognise, preserved verbatim so
+    /// the document round-trips without losing content such as headers.
+    case raw(UDFRawElement)
+}
+
+/// A verbatim element the typed mapping does not model. Keeps the tag name,
+/// attributes, character data and nested elements so the writer can re-emit it.
+public struct UDFRawElement: Equatable, Sendable {
+    public var name: String
+    public var attributes: [UDFAttribute]
+    public var cdata: String
+    public var children: [UDFRawElement]
+
+    public init(name: String, attributes: [UDFAttribute] = [], cdata: String = "", children: [UDFRawElement] = []) {
+        self.name = name
+        self.attributes = attributes
+        self.cdata = cdata
+        self.children = children
+    }
 }
 
 public struct UDFParagraph: Equatable, Sendable {

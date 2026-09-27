@@ -40,7 +40,18 @@ public enum UDFWriter {
             return "<field\(attributeString(field.attributes))>\(runsXML(field.runs))</field>\n"
         case .space(let run):
             return "<space\(runAttributes(run)) />"
+        case .raw(let raw):
+            return rawXML(raw)
         }
+    }
+
+    private static func rawXML(_ raw: UDFRawElement) -> String {
+        let attrs = attributeString(raw.attributes)
+        if raw.cdata.isEmpty && raw.children.isEmpty {
+            return "<\(raw.name)\(attrs) />"
+        }
+        let inner = escape(raw.cdata) + raw.children.map(rawXML).joined()
+        return "<\(raw.name)\(attrs)>\(inner)</\(raw.name)>"
     }
 
     private static func tableXML(_ table: UDFTable) -> String {
