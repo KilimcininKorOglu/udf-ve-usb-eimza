@@ -106,7 +106,21 @@ struct StatusBadge: View {
     var body: some View {
         HStack(spacing: 6) {
             Circle().fill(color).frame(width: 9, height: 9)
-            Text(model.statusMessage).font(.caption).foregroundStyle(.secondary)
+            Text(label)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+                .fixedSize()
+        }
+        .help(model.statusMessage)
+    }
+
+    private var label: String {
+        switch model.cardStatus {
+        case .present: return "Kart hazır"
+        case .reading: return "Okunuyor"
+        case .absent: return "Kart yok"
+        case .error: return "Okuyucu yok"
         }
     }
 

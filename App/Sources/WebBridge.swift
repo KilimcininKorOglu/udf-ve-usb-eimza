@@ -36,18 +36,25 @@ final class WebBridge: NSObject, WKScriptMessageHandler {
             p.resolve(new Response(bytes, {status: status, headers: headers}));
           };
           window.fetch = function(input, init){
-            var url = (typeof input === 'string') ? input : input.url;
-            if(url.indexOf(TARGET) === -1 && origFetch) return origFetch(input, init);
-            init = init || {};
-            var id = String(nextId++);
-            var headers = {};
-            try{ if(init.headers){ new Headers(init.headers).forEach(function(v,k){ headers[k]=v; }); } }catch(e){}
-            var body = (typeof init.body === 'string') ? init.body : '';
-            return new Promise(function(resolve, reject){
-              pending[id] = {resolve: resolve, reject: reject};
-              window.webkit.messageHandlers.signbridge.postMessage(
-                {kind:'fetch', id:id, method:(init.method||'GET'), url:url, headers:headers, body:body});
-            });
+            try {
+              var url = (typeof input === 'string') ? input
+                : (input && typeof input.url === 'string') ? input.url : String(input);
+              if(url.indexOf(TARGET) === -1) {
+                return origFetch ? origFetch(input, init) : Promise.reject(new Error('fetch yok'));
+              }
+              init = init || {};
+              var id = String(nextId++);
+              var headers = {};
+              try{ if(init.headers){ new Headers(init.headers).forEach(function(v,k){ headers[k]=v; }); } }catch(e){}
+              var body = (typeof init.body === 'string') ? init.body : '';
+              return new Promise(function(resolve, reject){
+                pending[id] = {resolve: resolve, reject: reject};
+                window.webkit.messageHandlers.signbridge.postMessage(
+                  {kind:'fetch', id:id, method:(init.method||'GET'), url:url, headers:headers, body:body});
+              });
+            } catch(e) {
+              return origFetch ? origFetch(input, init) : Promise.reject(e);
+            }
           };
         })();
         """
@@ -83,6 +90,17 @@ final class WebBridge: NSObject, WKScriptMessageHandler {
         return HTTPRequest(method: method, path: path, query: [:], headers: headers, body: body)
     }
 
+    private func errorHTML(_ message: String) -> String {
+        """
+        <html><head><meta name="viewport" content="width=device-width, initial-scale=1">
+        <style>body{font-family:-apple-system,sans-serif;background:#1c1c1e;color:#eee;
+        display:flex;align-items:center;justify-content:center;height:100vh;margin:0}
+        .box{text-align:center;padding:24px}.t{font-size:17px;font-weight:600;margin-bottom:8px}
+        .m{font-size:14px;color:#9a9a9e}</style></head>
+        <body><div class="box"><div class="t">Sayfa açılamadı</div><div class="m">\(message)</div></div></body></html>
+        """
+    }
+
     @MainActor
     private func deliver(id: String, response: HTTPResponse) {
         let headersJSON = (try? JSONSerialization.data(withJSONObject: response.headers))
@@ -92,5 +110,21 @@ final class WebBridge: NSObject, WKScriptMessageHandler {
             .replacingOccurrences(of: "'", with: "\\'")
         let js = "window.__sbResolve('\(id)', \(response.status), '\(escaped)', '\(bodyB64)');"
         webView?.evaluateJavaScript(js)
+    }
+}
+
+extension WebBridge: WKNavigationDelegate {
+    func webView(_ webView: WKWebView, didFailProvisionalNavigation navigation: WKNavigation!, withError error: Error) {
+        show(error, on: webView)
+    }
+
+    func webView(_ webView: WKWebView, didFail navigation: WKNavigation!, withError error: Error) {
+        show(error, on: webView)
+    }
+
+    private func show(_ error: Error, on webView: WKWebView) {
+        let nsError = error as NSError
+        guard nsError.code != NSURLErrorCancelled else { return }
+        webView.loadHTMLString(errorHTML(nsError.localizedDescription), baseURL: nil)
     }
 }

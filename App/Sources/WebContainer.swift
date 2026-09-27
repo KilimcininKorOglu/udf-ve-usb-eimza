@@ -28,6 +28,7 @@ struct WebContainer: PlatformViewRepresentable {
         configuration.userContentController.addUserScript(script)
         configuration.userContentController.add(bridge, name: WebBridge.handlerName)
         let webView = WKWebView(frame: .zero, configuration: configuration)
+        webView.navigationDelegate = bridge
         bridge.attach(to: webView)
         webView.load(URLRequest(url: url))
         return webView

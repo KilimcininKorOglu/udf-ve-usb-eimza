@@ -99,14 +99,14 @@ enum PortalCatalog {
         Portal(name: "UYAP (Avukat Portal)", subtitle: nil,
                url: URL(string: "https://avukat.uyap.gov.tr")!),
         Portal(name: "e-Devlet", subtitle: nil,
-               url: URL(string: "https://www.turkiye.gov.tr/elektronik-imza-yeni?actionName=kayitKontrol&lan=tr")!),
+               url: URL(string: "https://giris.turkiye.gov.tr")!),
         Portal(name: "UETS (e-Tebligat)", subtitle: nil,
                url: URL(string: "https://ptt.etebligat.gov.tr/login")!),
         Portal(name: "PTT KEP", subtitle: nil,
-               url: URL(string: "https://ptt.hs01.kep.tr/webmail/appSign/eSign")!),
+               url: URL(string: "https://ptt.hs01.kep.tr")!),
         Portal(name: "e-Devlet – kodu elle gir",
                subtitle: "Başka uygulamadaki girişin kodu (ör. Celse)",
-               url: URL(string: "https://giris.turkiye.gov.tr/Giris/Elektronik-Imza?actionName=imzala")!),
+               url: URL(string: "https://giris.turkiye.gov.tr")!),
     ]
 
     static let requirements: [Requirement] = [
