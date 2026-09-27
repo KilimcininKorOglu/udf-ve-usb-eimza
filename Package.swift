@@ -1,0 +1,37 @@
+// swift-tools-version: 6.0
+import PackageDescription
+
+let package = Package(
+    name: "SignBridge",
+    platforms: [
+        .macOS(.v13),
+        .iOS(.v16),
+    ],
+    products: [
+        .library(name: "SignCore", targets: ["SignCore"]),
+        .executable(name: "signbridged", targets: ["signbridged"]),
+    ],
+    dependencies: [
+        .package(url: "https://github.com/apple/swift-asn1.git", from: "1.2.0"),
+        .package(url: "https://github.com/apple/swift-certificates.git", from: "1.5.0"),
+        .package(url: "https://github.com/apple/swift-crypto.git", from: "3.0.0"),
+    ],
+    targets: [
+        .target(
+            name: "SignCore",
+            dependencies: [
+                .product(name: "SwiftASN1", package: "swift-asn1"),
+                .product(name: "X509", package: "swift-certificates"),
+                .product(name: "Crypto", package: "swift-crypto"),
+            ]
+        ),
+        .executableTarget(
+            name: "signbridged",
+            dependencies: ["SignCore"]
+        ),
+        .testTarget(
+            name: "SignCoreTests",
+            dependencies: ["SignCore"]
+        ),
+    ]
+)
