@@ -104,6 +104,37 @@ struct UDFRoundTripTests {
         #expect(reparsed == document)
     }
 
+    @Test("header and footer map to typed sections and round-trip")
+    func headerFooterSections() throws {
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <template format_id="1.7" >
+        <content><![CDATA[X]]></content><properties><pageFormat mediaSizeName="1" /></properties>\
+        <styles><style name="default" /></styles>
+        <elements >
+        <header startPage="2" background="-1"><paragraph resolver="default"><content startOffset="0" length="1" /></paragraph></header>
+        <paragraph resolver="default"><content startOffset="0" length="1" /></paragraph>
+        <footer background="-1"><paragraph resolver="default"><content startOffset="0" length="1" /></paragraph></footer>
+        </elements>
+        </template>
+        """
+        let document = try UDFReader.parse(contentXML: Data(xml.utf8))
+        guard case .header(let header)? = document.elements.first else {
+            Issue.record("ilk eleman header değil"); return
+        }
+        #expect(header.attributes.value("startPage") == "2")
+        guard case .paragraph = header.elements.first else {
+            Issue.record("header içinde paragraf yok"); return
+        }
+        guard case .footer(let footer) = document.elements.last else {
+            Issue.record("son eleman footer değil"); return
+        }
+        #expect(footer.attributes.value("background") == "-1")
+
+        let reparsed = try UDFReader.read(udf: try UDFWriter.write(document))
+        #expect(reparsed == document)
+    }
+
     @Test("an unrecognised element is preserved verbatim")
     func rawElementPreserved() throws {
         let xml = """
@@ -112,18 +143,18 @@ struct UDFRoundTripTests {
         <content><![CDATA[X]]></content><properties><pageFormat mediaSizeName="1" /></properties>\
         <styles><style name="default" /></styles>
         <elements >
-        <header resolver="default"><content startOffset="0" length="1" /></header>
+        <sidenote kind="ek"><content startOffset="0" length="1" /></sidenote>
         <paragraph resolver="default"><content startOffset="0" length="1" /></paragraph>
         </elements>
         </template>
         """
         let document = try UDFReader.parse(contentXML: Data(xml.utf8))
-        guard case .raw(let header)? = document.elements.first else {
-            Issue.record("ilk eleman raw header değil"); return
+        guard case .raw(let note)? = document.elements.first else {
+            Issue.record("ilk eleman raw değil"); return
         }
-        #expect(header.name == "header")
-        #expect(header.attributes.value("resolver") == "default")
-        #expect(header.children.first?.name == "content")
+        #expect(note.name == "sidenote")
+        #expect(note.attributes.value("kind") == "ek")
+        #expect(note.children.first?.name == "content")
 
         let reparsed = try UDFReader.read(udf: try UDFWriter.write(document))
         #expect(reparsed == document)

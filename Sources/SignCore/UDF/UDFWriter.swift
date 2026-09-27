@@ -40,9 +40,17 @@ public enum UDFWriter {
             return "<field\(attributeString(field.attributes))>\(runsXML(field.runs))</field>\n"
         case .space(let run):
             return "<space\(runAttributes(run)) />"
+        case .header(let section):
+            return "<header\(attributeString(section.attributes))>\(elementsXML(section.elements))</header>\n"
+        case .footer(let section):
+            return "<footer\(attributeString(section.attributes))>\(elementsXML(section.elements))</footer>\n"
         case .raw(let raw):
             return rawXML(raw)
         }
+    }
+
+    private static func elementsXML(_ elements: [UDFElement]) -> String {
+        elements.map(elementXML).joined()
     }
 
     private static func rawXML(_ raw: UDFRawElement) -> String {

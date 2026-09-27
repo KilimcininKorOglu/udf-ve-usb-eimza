@@ -58,9 +58,17 @@ public enum UDFReader {
             return .field(UDFField(attributes: node.attributes, runs: runs(of: node)))
         case "space":
             return .space(run(node))
+        case "header":
+            return .header(section(node))
+        case "footer":
+            return .footer(section(node))
         default:
             return .raw(rawElement(node))
         }
+    }
+
+    private static func section(_ node: RawNode) -> UDFSection {
+        UDFSection(attributes: node.attributes, elements: node.children.compactMap(mapElement))
     }
 
     private static func inlines(of node: RawNode) -> [UDFInline] {

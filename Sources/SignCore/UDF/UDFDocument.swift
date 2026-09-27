@@ -73,9 +73,23 @@ public indirect enum UDFElement: Equatable, Sendable {
     case image(UDFImage)
     case field(UDFField)
     case space(UDFContentRun)
+    case header(UDFSection)
+    case footer(UDFSection)
     /// Any element the typed mapping does not recognise, preserved verbatim so
-    /// the document round-trips without losing content such as headers.
+    /// the document round-trips without losing content.
     case raw(UDFRawElement)
+}
+
+/// A page header or footer: its own attributes and a list of block elements,
+/// mostly paragraphs, laid out like a table cell.
+public struct UDFSection: Equatable, Sendable {
+    public var attributes: [UDFAttribute]
+    public var elements: [UDFElement]
+
+    public init(attributes: [UDFAttribute] = [], elements: [UDFElement] = []) {
+        self.attributes = attributes
+        self.elements = elements
+    }
 }
 
 /// A verbatim element the typed mapping does not model. Keeps the tag name,
