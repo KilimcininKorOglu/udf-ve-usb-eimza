@@ -8,6 +8,14 @@ public struct HTTPRequest: Sendable {
     public let headers: [String: String]
     public let body: Data
 
+    public init(method: String, path: String, query: [String: String], headers: [String: String], body: Data) {
+        self.method = method
+        self.path = path
+        self.query = query
+        self.headers = headers
+        self.body = body
+    }
+
     public func header(_ name: String) -> String? {
         headers[name.lowercased()]
     }
