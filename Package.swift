@@ -17,9 +17,11 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-crypto.git", from: "3.0.0"),
     ],
     targets: [
+        .systemLibrary(name: "Clibxml2", path: "Sources/Clibxml2"),
         .target(
             name: "SignCore",
             dependencies: [
+                "Clibxml2",
                 .product(name: "SwiftASN1", package: "swift-asn1"),
                 .product(name: "X509", package: "swift-certificates"),
                 .product(name: "Crypto", package: "swift-crypto"),
