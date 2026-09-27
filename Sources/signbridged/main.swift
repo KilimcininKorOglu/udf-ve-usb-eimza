@@ -1,7 +1,8 @@
 import Foundation
 import SignCore
 
-let router = Router(service: StubSigningService())
+let service = CardSigningService(transport: TKSmartCardTransport())
+let router = Router(service: service)
 let server = LoopbackServer(router: router)
 
 do {
