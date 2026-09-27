@@ -30,7 +30,7 @@ struct AboutView: View {
                     .frame(width: 56, height: 56)
                     .background(.tint.opacity(0.12), in: RoundedRectangle(cornerRadius: 12))
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("USB e-İmza").font(.title2).bold()
+                    Text("e-İmza Köprüsü").font(.title2).bold()
                     Text("Nitelikli elektronik imza uygulaması")
                         .font(.callout).foregroundStyle(.secondary)
                 }

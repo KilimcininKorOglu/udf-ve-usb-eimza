@@ -96,28 +96,30 @@ struct Requirement: Identifiable, Hashable {
 
 enum PortalCatalog {
     static let portals: [Portal] = [
-        Portal(name: "UYAP (Avukat Portal)", subtitle: nil,
+        Portal(name: "UYAP Avukat Girişi", subtitle: nil,
                url: URL(string: "https://avukat.uyap.gov.tr")!),
-        Portal(name: "e-Devlet", subtitle: nil,
+        Portal(name: "e-Devlet Girişi",
+               subtitle: "Nitelikli e-imza ile oturum açın",
                url: URL(string: "https://giris.turkiye.gov.tr")!),
-        Portal(name: "UETS (e-Tebligat)", subtitle: nil,
+        Portal(name: "UETS e-Tebligat", subtitle: nil,
                url: URL(string: "https://ptt.etebligat.gov.tr/login")!),
         Portal(name: "PTT KEP", subtitle: nil,
                url: URL(string: "https://ptt.hs01.kep.tr")!),
-        Portal(name: "e-Devlet – kodu elle gir",
-               subtitle: "Başka uygulamadaki girişin kodu (ör. Celse)",
+        Portal(name: "e-Devlet, işlem kodunu elle girin",
+               subtitle: "Başka bir uygulamada başlattığınız girişin kodunu buraya yazın",
                url: URL(string: "https://giris.turkiye.gov.tr")!),
     ]
 
     static let requirements: [Requirement] = [
-        Requirement(symbol: "creditcard", text: "Nitelikli e-imza kartı ve PIN'i"),
-        Requirement(symbol: "sdcard", text: "CCID uyumlu USB kart okuyucu (ör. ACR39U)"),
-        Requirement(symbol: "cable.connector", text: "USB-C veya Lightning-USB adaptörü"),
+        Requirement(symbol: "creditcard", text: "Nitelikli sertifika taşıyan imza kartı ve kartın PIN kodu"),
+        Requirement(symbol: "sdcard", text: "CCID standardına uygun USB akıllı kart okuyucu (örneğin ACR39U)"),
+        Requirement(symbol: "cable.connector", text: "Telefon veya tablet için USB-C ya da Lightning'den USB'ye çevirici"),
     ]
 
     static let footer = """
-    Giriş sayfasındaki işlem kodu okunur, imza kartla atılır ve sunucuya \
-    gönderilir. Uygulama sayfaya müdahale etmez; girişi sayfa tamamlar. \
-    PIN yalnız karta gider, kaydedilmez.
+    İmza akışı şöyle işler: açılan sayfadaki işlem kodu okunur, imza \
+    karttaki anahtarla üretilir ve sunucuya iletilir. Uygulama sayfanın \
+    içeriğine karışmaz; girişi sayfanın kendisi bitirir. Girdiğiniz PIN \
+    yalnızca karta gönderilir, hiçbir yerde saklanmaz.
     """
 }
