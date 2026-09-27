@@ -29,6 +29,7 @@ struct DocumentSignView: View {
             }
         }
         .formStyle(.grouped)
+        .navigationTitle("Belge İmzala")
         .task { await loadCertificates() }
         .fileImporter(isPresented: $importing, allowedContentTypes: [.data, .item]) { handleImport($0) }
         .fileExporter(

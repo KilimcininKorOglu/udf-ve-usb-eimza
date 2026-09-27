@@ -40,7 +40,7 @@ struct PortalsView: View {
 
     var body: some View {
         NavigationStack {
-            List {
+            Form {
                 Section("Portallar") {
                     ForEach(PortalCatalog.portals) { portal in
                         NavigationLink(value: portal) { PortalRow(portal: portal) }
@@ -63,9 +63,9 @@ struct PortalsView: View {
                         Text(probeMessage).font(.callout).foregroundStyle(.secondary)
                     }
                 }
-                Section { EmptyView() } footer: { Text(PortalCatalog.footer) }
+                Section { Text(PortalCatalog.footer).font(.footnote).foregroundStyle(.secondary) }
             }
-            .groupedListStyle()
+            .formStyle(.grouped)
             .navigationTitle("e-İmza")
             .navigationDestination(for: Portal.self) { portal in
                 WebPortalView(portal: portal)
@@ -132,14 +132,3 @@ struct WebPortalView: View {
     }
 }
 
-extension View {
-    /// Inset grouped list on iOS, plain grouped on macOS.
-    @ViewBuilder
-    func groupedListStyle() -> some View {
-        #if os(iOS)
-        self.listStyle(.insetGrouped)
-        #else
-        self.listStyle(.inset)
-        #endif
-    }
-}
