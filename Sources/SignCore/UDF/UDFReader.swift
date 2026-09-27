@@ -159,7 +159,12 @@ private final class RawNodeBuilder: NSObject, XMLParserDelegate {
         stack.last?.cdata += String(decoding: CDATABlock, as: UTF8.self)
     }
 
-    func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
+    func parser(
+        _ parser: XMLParser,
+        didEndElement elementName: String,
+        namespaceURI: String?,
+        qualifiedName qName: String?
+    ) {
         if !stack.isEmpty { stack.removeLast() }
     }
 

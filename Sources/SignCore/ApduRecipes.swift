@@ -12,8 +12,8 @@ public enum ApduRecipes {
                     data: Data([UInt8(fid >> 8), UInt8(fid & 0xFF)]))
     }
 
-    /// SELECT the master file (3F00).
-    public static func selectMasterFile() -> Data {
+    /// SELECT the master file (MF, 3F00), the ISO/IEC 7816-4 name for the root DF.
+    public static func selectMasterFile() -> Data {  // swiftlint:disable:this inclusive_language
         apdu(cla: 0x00, ins: 0xA4, p1: 0x00, p2: 0x00, data: Data([0x3F, 0x00]))
     }
 

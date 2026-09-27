@@ -1,0 +1,40 @@
+# Project lint conventions. The cyclomatic_complexity limit stays at 10 and is
+# never weakened; a separate gate config also enforces it in CI.
+excluded:
+  - .build
+  - .build-xcode
+  - .udf-samples
+  - Tests/SignCoreTests/Resources
+
+disabled_rules:
+  # The code uses `String(decoding:as:)`, the non-failing UTF-8 decoder, on
+  # bytes already validated by the parser or card layer. The failable
+  # `String(bytes:encoding:)` this rule prefers returns an optional, which would
+  # force a silent empty fallback the project's own rules forbid.
+  - optional_data_string_conversion
+
+line_length:
+  warning: 120
+  error: 200
+
+# Multiline collections keep a trailing comma, matching swift-format and the
+# existing code style, so the two formatters do not fight each other.
+trailing_comma:
+  mandatory_comma: true
+
+cyclomatic_complexity:
+  warning: 10
+  error: 10
+
+# Short identifiers are idiomatic in the ASN.1, APDU and CMS code (v, si, sd,
+# ci, p1, p2, sw), so the minimum-length rule is relaxed rather than forcing
+# verbose names into cryptographic byte plumbing.
+identifier_name:
+  min_length:
+    warning: 1
+    error: 1
+
+type_name:
+  min_length:
+    warning: 2
+    error: 2

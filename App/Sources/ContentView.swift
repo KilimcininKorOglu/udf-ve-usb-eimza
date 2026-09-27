@@ -166,4 +166,3 @@ struct WebPortalView: View {
             .ignoresSafeArea(edges: .bottom)
     }
 }
-

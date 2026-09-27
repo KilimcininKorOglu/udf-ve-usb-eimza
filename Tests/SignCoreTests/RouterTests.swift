@@ -36,7 +36,8 @@ struct RouterTests {
     @Test("OPTIONS preflight reflects origin with 204")
     func preflight() async throws {
         let router = Router(service: StubSigningService())
-        let outcome = await router.route(request("OPTIONS", "/api/v1/signature/sign", origin: "https://www.turkiye.gov.tr"))
+        let preflightRequest = request("OPTIONS", "/api/v1/signature/sign", origin: "https://www.turkiye.gov.tr")
+        let outcome = await router.route(preflightRequest)
         guard case .response(let response) = outcome else { Issue.record("beklenen response"); return }
         #expect(response.status == 204)
         #expect(response.headers["access-control-allow-origin"] == "https://www.turkiye.gov.tr")

@@ -44,7 +44,12 @@ final class UDFEditorController: ObservableObject {
             let traits = fontTraits(font)
             let newBold = bold ? !traits.bold : traits.bold
             let newItalic = italic ? !traits.italic : traits.italic
-            return makeFont(family: font.familyName ?? "Helvetica", size: font.pointSize, bold: newBold, italic: newItalic)
+            return makeFont(
+                family: font.familyName ?? "Helvetica",
+                size: font.pointSize,
+                bold: newBold,
+                italic: newItalic
+            )
         }
     }
 

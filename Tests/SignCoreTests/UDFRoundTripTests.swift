@@ -37,10 +37,12 @@ struct UDFRoundTripTests {
         var document = UDFDocument()
         document.text = "Merhaba dünya"
         document.styles = [UDFStyle(name: "default", attributes: [UDFAttribute("family", "Times New Roman")])]
-        document.elements = [.paragraph(UDFParagraph(
-            attributes: [UDFAttribute("resolver", "default")],
-            runs: [UDFContentRun(startOffset: 0, length: 13)]
-        ))]
+        document.elements = [
+            .paragraph(UDFParagraph(
+                attributes: [UDFAttribute("resolver", "default")],
+                runs: [UDFContentRun(startOffset: 0, length: 13)]
+            )),
+        ]
         let data = try UDFWriter.write(document)
         let reparsed = try UDFReader.read(udf: data)
         #expect(reparsed.text == "Merhaba dünya")
@@ -112,9 +114,13 @@ struct UDFRoundTripTests {
         <content><![CDATA[X]]></content><properties><pageFormat mediaSizeName="1" /></properties>\
         <styles><style name="default" /></styles>
         <elements >
-        <header startPage="2" background="-1"><paragraph resolver="default"><content startOffset="0" length="1" /></paragraph></header>
+        <header startPage="2" background="-1">\
+        <paragraph resolver="default"><content startOffset="0" length="1" /></paragraph>\
+        </header>
         <paragraph resolver="default"><content startOffset="0" length="1" /></paragraph>
-        <footer background="-1"><paragraph resolver="default"><content startOffset="0" length="1" /></paragraph></footer>
+        <footer background="-1">\
+        <paragraph resolver="default"><content startOffset="0" length="1" /></paragraph>\
+        </footer>
         </elements>
         </template>
         """

@@ -113,7 +113,10 @@ enum PortalCatalog {
     static let requirements: [Requirement] = [
         Requirement(symbol: "creditcard", text: "Nitelikli sertifika taşıyan imza kartı ve kartın PIN kodu"),
         Requirement(symbol: "sdcard", text: "CCID standardına uygun USB akıllı kart okuyucu (örneğin ACR39U)"),
-        Requirement(symbol: "cable.connector", text: "Telefon veya tablet için USB-C ya da Lightning'den USB'ye çevirici"),
+        Requirement(
+            symbol: "cable.connector",
+            text: "Telefon veya tablet için USB-C ya da Lightning'den USB'ye çevirici"
+        ),
     ]
 
     static let footer = """

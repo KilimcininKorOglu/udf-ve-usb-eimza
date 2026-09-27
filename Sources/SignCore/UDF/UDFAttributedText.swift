@@ -57,7 +57,13 @@ public enum UDFAttributedText {
                 runs: paragraphRuns
             )))
         }
-        return UDFDocument(formatID: formatID, text: fullText, pageFormat: pageFormat, styles: [defaultStyle], elements: elements)
+        return UDFDocument(
+            formatID: formatID,
+            text: fullText,
+            pageFormat: pageFormat,
+            styles: [defaultStyle],
+            elements: elements
+        )
     }
 
     // MARK: Attribute resolution

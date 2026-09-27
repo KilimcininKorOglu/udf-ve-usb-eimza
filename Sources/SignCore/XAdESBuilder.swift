@@ -43,14 +43,13 @@ public struct XAdESBuilder: Sendable {
         let toBeSigned = try Canonicalizer.canonicalize(signedInfo)
         let signatureValue = try await sign(toBeSigned).base64EncodedString()
 
-        let document = assemble(
-            ids: ids,
+        let document = assemble(ids: ids, parts: SignatureParts(
             signedInfo: signedInfo,
             signatureValue: signatureValue,
             certificateBase64: certificateDER.base64EncodedString(),
             objectXML: objectXML,
             signedProperties: signedProps
-        )
+        ))
         return Data(document.utf8)
     }
 
@@ -108,27 +107,31 @@ public struct XAdESBuilder: Sendable {
         """
     }
 
-    private func assemble(
-        ids: Identifiers,
-        signedInfo: String,
-        signatureValue: String,
-        certificateBase64: String,
-        objectXML: String,
-        signedProperties: String
-    ) -> String {
+    private func assemble(ids: Identifiers, parts: SignatureParts) -> String {
         """
         <?xml version="1.0" encoding="UTF-8"?>\
         <ds:Signature xmlns:ds="\(NS.ds)" Id="\(ids.signature)">\
-        \(signedInfo)\
-        <ds:SignatureValue>\(signatureValue)</ds:SignatureValue>\
-        <ds:KeyInfo><ds:X509Data><ds:X509Certificate>\(certificateBase64)</ds:X509Certificate></ds:X509Data></ds:KeyInfo>\
-        \(objectXML)\
+        \(parts.signedInfo)\
+        <ds:SignatureValue>\(parts.signatureValue)</ds:SignatureValue>\
+        <ds:KeyInfo><ds:X509Data>\
+        <ds:X509Certificate>\(parts.certificateBase64)</ds:X509Certificate>\
+        </ds:X509Data></ds:KeyInfo>\
+        \(parts.objectXML)\
         <ds:Object><xades:QualifyingProperties xmlns:xades="\(NS.xades)" Target="#\(ids.signature)">\
-        \(signedProperties)\
+        \(parts.signedProperties)\
         </xades:QualifyingProperties></ds:Object>\
         </ds:Signature>
         """
     }
+}
+
+/// The already-built body fragments assembled into the final XAdES document.
+private struct SignatureParts {
+    let signedInfo: String
+    let signatureValue: String
+    let certificateBase64: String
+    let objectXML: String
+    let signedProperties: String
 }
 
 /// Stable element identifiers for one signature.

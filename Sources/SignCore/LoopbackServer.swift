@@ -39,8 +39,7 @@ public final class LoopbackServer: @unchecked Sendable {
     }
 
     private func receive(_ connection: NWConnection, parser: HTTPRequestParser) {
-        connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) {
-            [weak self] data, _, isComplete, error in
+        connection.receive(minimumIncompleteLength: 1, maximumLength: 65536) { [weak self] data, _, isComplete, error in
             guard let self else { return }
             var parser = parser
             if let data, !data.isEmpty {
