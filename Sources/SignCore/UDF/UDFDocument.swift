@@ -96,12 +96,40 @@ public struct UDFRawElement: Equatable, Sendable {
 
 public struct UDFParagraph: Equatable, Sendable {
     public var attributes: [UDFAttribute]
-    public var runs: [UDFContentRun]
+    public var inlines: [UDFInline]
 
-    public init(attributes: [UDFAttribute] = [], runs: [UDFContentRun] = []) {
+    public init(attributes: [UDFAttribute] = [], inlines: [UDFInline] = []) {
         self.attributes = attributes
-        self.runs = runs
+        self.inlines = inlines
     }
+
+    /// Convenience initialiser for the common all-text-run paragraph.
+    public init(attributes: [UDFAttribute] = [], runs: [UDFContentRun]) {
+        self.attributes = attributes
+        self.inlines = runs.map { .content($0) }
+    }
+
+    /// The text runs among the inlines, in order (content, field and space
+    /// all point at a range of the document text).
+    public var textRuns: [UDFContentRun] {
+        inlines.compactMap { inline in
+            switch inline {
+            case .content(let run), .field(let run), .space(let run): return run
+            case .image, .raw: return nil
+            }
+        }
+    }
+}
+
+/// One inline item inside a paragraph, kept in document order. Content, field
+/// and space each point at a range of the flat text; an image is standalone;
+/// raw keeps any other inline element verbatim.
+public enum UDFInline: Equatable, Sendable {
+    case content(UDFContentRun)
+    case field(UDFContentRun)
+    case space(UDFContentRun)
+    case image(UDFRawElement)
+    case raw(UDFRawElement)
 }
 
 public struct UDFTable: Equatable, Sendable {

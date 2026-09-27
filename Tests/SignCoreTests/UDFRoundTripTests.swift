@@ -21,7 +21,7 @@ struct UDFRoundTripTests {
             Issue.record("ilk eleman paragraf değil"); return
         }
         #expect(paragraph.attributes.value("resolver") == "hvl-default")
-        #expect(paragraph.runs.first?.length == 1)
+        #expect(paragraph.textRuns.first?.length == 1)
     }
 
     @Test("read, write and read again yields the same model")
@@ -65,6 +65,41 @@ struct UDFRoundTripTests {
             .field(UDFField(attributes: [UDFAttribute("fieldType", "date")],
                             runs: [UDFContentRun(startOffset: 1, length: 1)])),
         ]
+        let reparsed = try UDFReader.read(udf: try UDFWriter.write(document))
+        #expect(reparsed == document)
+    }
+
+    @Test("inline field, space and image inside a paragraph round-trip in order")
+    func inlineParagraphItems() throws {
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8" ?>
+        <template format_id="1.7" >
+        <content><![CDATA[ABCDE]]></content><properties><pageFormat mediaSizeName="1" /></properties>\
+        <styles><style name="default" /></styles>
+        <elements >
+        <paragraph resolver="default">\
+        <content startOffset="0" length="1" />\
+        <field fieldName="getIl" startOffset="1" length="1" />\
+        <space startOffset="2" length="1" />\
+        <image imageData="AAAA" startOffset="3" length="1" />\
+        <content startOffset="4" length="1" />\
+        </paragraph>
+        </elements>
+        </template>
+        """
+        let document = try UDFReader.parse(contentXML: Data(xml.utf8))
+        guard case .paragraph(let paragraph)? = document.elements.first else {
+            Issue.record("ilk eleman paragraf değil"); return
+        }
+        #expect(paragraph.inlines.count == 5)
+        guard case .field(let field) = paragraph.inlines[1] else {
+            Issue.record("ikinci inline field değil"); return
+        }
+        #expect(field.attributes.value("fieldName") == "getIl")
+        guard case .image = paragraph.inlines[3] else {
+            Issue.record("dördüncü inline image değil"); return
+        }
+
         let reparsed = try UDFReader.read(udf: try UDFWriter.write(document))
         #expect(reparsed == document)
     }

@@ -6,3 +6,4 @@
 *.xcworkspace/xcuserdata/
 DerivedData/
 Package.resolved
+.udf-samples/

@@ -45,7 +45,7 @@ struct UDFAttributedTextTests {
         guard case .paragraph(let paragraph) = document.elements.first else {
             Issue.record("paragraf yok"); return
         }
-        let boldRun = paragraph.runs.first { $0.attributes.value("bold") == "true" }
+        let boldRun = paragraph.textRuns.first { $0.attributes.value("bold") == "true" }
         #expect(boldRun != nil)
         #expect(boldRun?.startOffset == 7)
     }

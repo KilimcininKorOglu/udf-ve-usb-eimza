@@ -31,7 +31,7 @@ public enum UDFWriter {
     private static func elementXML(_ element: UDFElement) -> String {
         switch element {
         case .paragraph(let paragraph):
-            return "<paragraph\(attributeString(paragraph.attributes))>\(runsXML(paragraph.runs))</paragraph>\n"
+            return "<paragraph\(attributeString(paragraph.attributes))>\(inlinesXML(paragraph.inlines))</paragraph>\n"
         case .table(let table):
             return tableXML(table)
         case .image(let image):
@@ -71,6 +71,19 @@ public enum UDFWriter {
 
     private static func runsXML(_ runs: [UDFContentRun]) -> String {
         runs.map { "<content\(runAttributes($0)) />" }.joined()
+    }
+
+    private static func inlinesXML(_ inlines: [UDFInline]) -> String {
+        inlines.map(inlineXML).joined()
+    }
+
+    private static func inlineXML(_ inline: UDFInline) -> String {
+        switch inline {
+        case .content(let run): return "<content\(runAttributes(run)) />"
+        case .field(let run): return "<field\(runAttributes(run)) />"
+        case .space(let run): return "<space\(runAttributes(run)) />"
+        case .image(let raw), .raw(let raw): return rawXML(raw)
+        }
     }
 
     private static func runAttributes(_ run: UDFContentRun) -> String {

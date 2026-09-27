@@ -49,7 +49,7 @@ public enum UDFReader {
     private static func mapElement(_ node: RawNode) -> UDFElement? {
         switch node.name {
         case "paragraph":
-            return .paragraph(UDFParagraph(attributes: node.attributes, runs: runs(of: node)))
+            return .paragraph(UDFParagraph(attributes: node.attributes, inlines: inlines(of: node)))
         case "table":
             return .table(mapTable(node))
         case "image":
@@ -60,6 +60,18 @@ public enum UDFReader {
             return .space(run(node))
         default:
             return .raw(rawElement(node))
+        }
+    }
+
+    private static func inlines(of node: RawNode) -> [UDFInline] {
+        node.children.map { child in
+            switch child.name {
+            case "content": return .content(run(child))
+            case "field": return .field(run(child))
+            case "space": return .space(run(child))
+            case "image": return .image(rawElement(child))
+            default: return .raw(rawElement(child))
+            }
         }
     }
 

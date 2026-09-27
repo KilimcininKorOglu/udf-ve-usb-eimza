@@ -24,7 +24,7 @@ public enum UDFAttributedText {
         for element in document.elements {
             guard case .paragraph(let paragraph) = element else { continue }
             let paragraphStyle = paragraph.attributes.value("resolver")
-            for run in paragraph.runs {
+            for run in paragraph.textRuns {
                 guard let text = safeSubstring(source, offset: run.startOffset, length: run.length) else { continue }
                 let merged = resolvedAttributes(run: run, paragraphStyle: paragraphStyle, styles: styleByName)
                 result.append(NSAttributedString(string: text, attributes: merged))
