@@ -37,19 +37,87 @@ final class AppModel: ObservableObject {
         statusTask?.cancel()
         server.stop()
     }
+
+    /// One-shot reader probe for the diagnostics row.
+    func probeReader() async -> String {
+        let envelope = await service.listCertificates()
+        switch envelope.metadata.status {
+        case .ok:
+            let count = envelope.data?.count ?? 0
+            return "Okuyucu ve kart hazır. Sertifika: \(count)"
+        default:
+            return envelope.metadata.message ?? "Okuyucu bulunamadı"
+        }
+    }
+
+    /// Certificates on the inserted card, empty when none are readable.
+    func certificates() async -> [CertificateEntry] {
+        (await service.listCertificates()).data ?? []
+    }
+
+    /// Signs content and returns the signed bytes or a message.
+    func sign(content: Data, certificateId: String, pin: String, type: SignatureType) async -> SignOutcome {
+        let request = SignRequest(
+            certificateId: certificateId,
+            password: pin,
+            signatureType: type,
+            contentBase64: content.base64EncodedString()
+        )
+        let envelope = await service.sign(request)
+        guard envelope.metadata.status == .ok,
+              let base64 = envelope.data?.signedDataBase64,
+              let data = Data(base64Encoded: base64) else {
+            return .failure(envelope.metadata.message ?? "İmza başarısız")
+        }
+        return .success(data)
+    }
 }
 
-/// The government sites the app can open.
-struct SignSite: Identifiable, Hashable {
+/// Result of a signing attempt for the UI.
+enum SignOutcome {
+    case success(Data)
+    case failure(String)
+}
+
+/// A login portal reachable from the app.
+struct Portal: Identifiable, Hashable {
     let id = UUID()
     let name: String
+    let subtitle: String?
     let url: URL
 }
 
-enum SignSites {
-    static let all: [SignSite] = [
-        SignSite(name: "e-Devlet", url: URL(string: "https://www.turkiye.gov.tr")!),
-        SignSite(name: "UYAP Avukat", url: URL(string: "https://avukat.uyap.gov.tr")!),
-        SignSite(name: "e-Tebligat", url: URL(string: "https://ptt.etebligat.gov.tr")!),
+/// A hardware or setup requirement shown on the portals screen.
+struct Requirement: Identifiable, Hashable {
+    let id = UUID()
+    let symbol: String
+    let text: String
+}
+
+enum PortalCatalog {
+    static let portals: [Portal] = [
+        Portal(name: "UYAP (Avukat Portal)", subtitle: nil,
+               url: URL(string: "https://avukat.uyap.gov.tr")!),
+        Portal(name: "e-Devlet", subtitle: nil,
+               url: URL(string: "https://www.turkiye.gov.tr/elektronik-imza-yeni?actionName=kayitKontrol&lan=tr")!),
+        Portal(name: "UETS (e-Tebligat)", subtitle: nil,
+               url: URL(string: "https://ptt.etebligat.gov.tr/login")!),
+        Portal(name: "PTT KEP", subtitle: nil,
+               url: URL(string: "https://ptt.hs01.kep.tr/webmail/appSign/eSign")!),
+        Portal(name: "e-Devlet – kodu elle gir",
+               subtitle: "Başka uygulamadaki girişin kodu (ör. Celse)",
+               url: URL(string: "https://giris.turkiye.gov.tr/Giris/Elektronik-Imza?actionName=imzala")!),
     ]
+
+    static let requirements: [Requirement] = [
+        Requirement(symbol: "creditcard", text: "Nitelikli e-imza kartı ve PIN'i"),
+        Requirement(symbol: "sdcard", text: "CCID uyumlu USB kart okuyucu (ör. ACR39U)"),
+        Requirement(symbol: "cable.connector", text: "USB-C veya Lightning-USB adaptörü"),
+    ]
+
+    static let footer = """
+    Giriş sayfasındaki işlem kodu okunur, imza kartla atılır ve sunucuya \
+    gönderilir. Uygulama sayfaya müdahale etmez; girişi sayfa tamamlar. \
+    PIN yalnız karta gider, kaydedilmez.
+    """
 }

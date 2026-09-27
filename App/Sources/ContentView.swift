@@ -3,49 +3,143 @@ import SignCore
 
 struct ContentView: View {
     @EnvironmentObject private var model: AppModel
-    @State private var selectedSite = SignSites.all[0]
+    @State private var tab: Tab = .portals
+
+    enum Tab: Hashable { case portals, document }
 
     var body: some View {
         VStack(spacing: 0) {
-            toolbar
-            Divider()
-            WebContainer(url: selectedSite.url, router: model.router)
-                .id(selectedSite.id)
-        }
-    }
+            Picker("", selection: $tab) {
+                Text("Portallar").tag(Tab.portals)
+                Text("Belge İmzala").tag(Tab.document)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .frame(maxWidth: 360)
+            .padding(.vertical, 10)
 
-    private var toolbar: some View {
-        HStack(spacing: 12) {
-            Picker("Site", selection: $selectedSite) {
-                ForEach(SignSites.all) { site in
-                    Text(site.name).tag(site)
+            Divider()
+
+            Group {
+                switch tab {
+                case .portals: PortalsView()
+                case .document: DocumentSignView()
                 }
             }
-            .labelsHidden()
-            .frame(maxWidth: 220)
-            Spacer()
-            statusBadge
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
-        .padding(10)
+        .frame(minWidth: 480, minHeight: 640)
+    }
+}
+
+/// The grouped list of login portals, requirements and diagnostics.
+struct PortalsView: View {
+    @EnvironmentObject private var model: AppModel
+    @State private var probeMessage: String?
+    @State private var probing = false
+
+    var body: some View {
+        NavigationStack {
+            List {
+                Section("Portallar") {
+                    ForEach(PortalCatalog.portals) { portal in
+                        NavigationLink(value: portal) { PortalRow(portal: portal) }
+                    }
+                }
+                Section("Gerekenler") {
+                    ForEach(PortalCatalog.requirements) { requirement in
+                        Label(requirement.text, systemImage: requirement.symbol)
+                    }
+                }
+                Section("Tanı") {
+                    Button(action: probe) {
+                        HStack {
+                            Text("Okuyucuyu sına")
+                            Spacer()
+                            if probing { ProgressView().controlSize(.small) }
+                        }
+                    }
+                    if let probeMessage {
+                        Text(probeMessage).font(.callout).foregroundStyle(.secondary)
+                    }
+                }
+                Section { EmptyView() } footer: { Text(PortalCatalog.footer) }
+            }
+            .groupedListStyle()
+            .navigationTitle("e-İmza")
+            .navigationDestination(for: Portal.self) { portal in
+                WebPortalView(portal: portal)
+            }
+            .toolbar { ToolbarItem(placement: .automatic) { StatusBadge() } }
+        }
     }
 
-    private var statusBadge: some View {
+    private func probe() {
+        probing = true
+        Task {
+            let message = await model.probeReader()
+            await MainActor.run {
+                probeMessage = message
+                probing = false
+            }
+        }
+    }
+}
+
+struct PortalRow: View {
+    let portal: Portal
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 2) {
+            Text(portal.name)
+            if let subtitle = portal.subtitle {
+                Text(subtitle).font(.caption).foregroundStyle(.secondary)
+            }
+        }
+        .padding(.vertical, 2)
+    }
+}
+
+struct StatusBadge: View {
+    @EnvironmentObject private var model: AppModel
+
+    var body: some View {
         HStack(spacing: 6) {
-            Circle()
-                .fill(color(for: model.cardStatus))
-                .frame(width: 10, height: 10)
-            Text(model.statusMessage)
-                .font(.callout)
-                .foregroundStyle(.secondary)
+            Circle().fill(color).frame(width: 9, height: 9)
+            Text(model.statusMessage).font(.caption).foregroundStyle(.secondary)
         }
     }
 
-    private func color(for status: CardStatus) -> Color {
-        switch status {
+    private var color: Color {
+        switch model.cardStatus {
         case .present: return .green
         case .reading: return .yellow
         case .absent: return .gray
         case .error: return .red
         }
+    }
+}
+
+/// A pushed WebView for one portal.
+struct WebPortalView: View {
+    @EnvironmentObject private var model: AppModel
+    let portal: Portal
+
+    var body: some View {
+        WebContainer(url: portal.url, router: model.router)
+            .navigationTitle(portal.name)
+            .ignoresSafeArea(edges: .bottom)
+    }
+}
+
+extension View {
+    /// Inset grouped list on iOS, plain grouped on macOS.
+    @ViewBuilder
+    func groupedListStyle() -> some View {
+        #if os(iOS)
+        self.listStyle(.insetGrouped)
+        #else
+        self.listStyle(.inset)
+        #endif
     }
 }
