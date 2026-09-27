@@ -5,7 +5,7 @@ struct ContentView: View {
     @EnvironmentObject private var model: AppModel
     @State private var tab: Tab = .portals
 
-    enum Tab: Hashable { case portals, document, about }
+    enum Tab: Hashable { case portals, document, editor, about }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -18,12 +18,13 @@ struct ContentView: View {
 
             Picker("", selection: $tab) {
                 Text("Portallar").tag(Tab.portals)
-                Text("Belge İmzala").tag(Tab.document)
+                Text("İmzala").tag(Tab.document)
+                Text("Editör").tag(Tab.editor)
                 Text("Hakkında").tag(Tab.about)
             }
             .pickerStyle(.segmented)
             .labelsHidden()
-            .frame(maxWidth: 420)
+            .frame(maxWidth: 460)
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
 
@@ -33,6 +34,7 @@ struct ContentView: View {
                 switch tab {
                 case .portals: PortalsView()
                 case .document: DocumentSignView()
+                case .editor: UDFEditorView()
                 case .about: AboutView()
                 }
             }
