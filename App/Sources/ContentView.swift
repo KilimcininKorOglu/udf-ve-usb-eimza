@@ -58,11 +58,9 @@ struct PortalsView: View {
                     ForEach(PortalCatalog.requirements) { requirement in
                         Label(requirement.text, systemImage: requirement.symbol)
                     }
-                }
-                Section("Tanı") {
                     Button(action: probe) {
                         HStack {
-                            Text("Okuyucuyu sına")
+                            Label("Okuyucuyu sına", systemImage: "stethoscope")
                             Spacer()
                             if probing { ProgressView().controlSize(.small) }
                         }
