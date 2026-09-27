@@ -33,7 +33,7 @@ private func rgbColor(red: Int, green: Int, blue: Int) -> UDFColor {
 }
 
 #if canImport(AppKit)
-func makeFont(family: String, size: CGFloat, bold: Bool, italic: Bool) -> UDFFont {
+public func makeFont(family: String, size: CGFloat, bold: Bool, italic: Bool) -> UDFFont {
     var traits: NSFontDescriptor.SymbolicTraits = []
     if bold { traits.insert(.bold) }
     if italic { traits.insert(.italic) }
@@ -41,12 +41,12 @@ func makeFont(family: String, size: CGFloat, bold: Bool, italic: Bool) -> UDFFon
     return NSFont(descriptor: descriptor, size: size) ?? NSFont.systemFont(ofSize: size)
 }
 
-func fontTraits(_ font: UDFFont) -> (bold: Bool, italic: Bool) {
+public func fontTraits(_ font: UDFFont) -> (bold: Bool, italic: Bool) {
     let traits = font.fontDescriptor.symbolicTraits
     return (traits.contains(.bold), traits.contains(.italic))
 }
 #elseif canImport(UIKit)
-func makeFont(family: String, size: CGFloat, bold: Bool, italic: Bool) -> UDFFont {
+public func makeFont(family: String, size: CGFloat, bold: Bool, italic: Bool) -> UDFFont {
     var traits: UIFontDescriptor.SymbolicTraits = []
     if bold { traits.insert(.traitBold) }
     if italic { traits.insert(.traitItalic) }
@@ -55,7 +55,7 @@ func makeFont(family: String, size: CGFloat, bold: Bool, italic: Bool) -> UDFFon
     return UIFont(descriptor: descriptor, size: size)
 }
 
-func fontTraits(_ font: UDFFont) -> (bold: Bool, italic: Bool) {
+public func fontTraits(_ font: UDFFont) -> (bold: Bool, italic: Bool) {
     let traits = font.fontDescriptor.symbolicTraits
     return (traits.contains(.traitBold), traits.contains(.traitItalic))
 }
