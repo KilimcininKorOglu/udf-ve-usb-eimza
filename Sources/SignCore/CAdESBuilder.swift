@@ -1,7 +1,7 @@
-import Foundation
 import Crypto
-import X509
+import Foundation
 import SwiftASN1
+import X509
 
 /// Builds a CAdES-BES signature as a CMS SignedData structure, using an
 /// external signing closure so the private key can stay on the card.

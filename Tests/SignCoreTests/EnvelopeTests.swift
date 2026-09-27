@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import SignCore
 
 @Suite("Envelope JSON contract")
@@ -42,8 +43,8 @@ struct EnvelopeTests {
     @Test("sign request decodes required fields")
     func signRequestDecode() throws {
         let body = """
-        {"certificateId":"c1","password":"1234","signatureType":"CAdES","contentBase64":"AAAA"}
-        """
+            {"certificateId":"c1","password":"1234","signatureType":"CAdES","contentBase64":"AAAA"}
+            """
         let req = try JSONDecoder().decode(SignRequest.self, from: Data(body.utf8))
         #expect(req.certificateId == "c1")
         #expect(req.signatureType == .cades)

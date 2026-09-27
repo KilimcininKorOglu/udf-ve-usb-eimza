@@ -1,7 +1,8 @@
+import Crypto
 import Foundation
 import Testing
-import Crypto
 import _CryptoExtras
+
 @testable import SignCore
 
 @Suite("CAdES builder")
@@ -39,10 +40,12 @@ struct CAdESBuilderTests {
         try cms.write(to: sigURL)
         try content.write(to: contentURL)
 
-        let (status, output) = try run("/usr/bin/openssl", [
-            "cms", "-verify", "-inform", "DER", "-in", sigURL.path,
-            "-content", contentURL.path, "-noverify", "-out", "/dev/null",
-        ])
+        let (status, output) = try run(
+            "/usr/bin/openssl",
+            [
+                "cms", "-verify", "-inform", "DER", "-in", sigURL.path,
+                "-content", contentURL.path, "-noverify", "-out", "/dev/null",
+            ])
         #expect(status == 0, "openssl doğrulaması başarısız: \(output)")
         #expect(output.contains("Verification successful"))
     }

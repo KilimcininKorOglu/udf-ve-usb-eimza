@@ -12,15 +12,14 @@ disabled_rules:
   # `String(bytes:encoding:)` this rule prefers returns an optional, which would
   # force a silent empty fallback the project's own rules forbid.
   - optional_data_string_conversion
+  # swift-format owns comma formatting (its TrailingComma rule); running
+  # SwiftLint's trailing_comma alongside it makes the two formatters disagree on
+  # nested single-element literals.
+  - trailing_comma
 
 line_length:
   warning: 120
   error: 200
-
-# Multiline collections keep a trailing comma, matching swift-format and the
-# existing code style, so the two formatters do not fight each other.
-trailing_comma:
-  mandatory_comma: true
 
 cyclomatic_complexity:
   warning: 10

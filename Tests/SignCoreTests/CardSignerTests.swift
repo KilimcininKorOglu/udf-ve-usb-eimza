@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import SignCore
 
 /// Scriptable card for the signing flow. Verifies a known PIN and replays a

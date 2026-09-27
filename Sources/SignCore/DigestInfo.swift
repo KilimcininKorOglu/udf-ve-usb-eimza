@@ -1,5 +1,5 @@
-import Foundation
 import Crypto
+import Foundation
 
 /// Builds the PKCS#1 v1.5 DigestInfo structure a card signs for RSA.
 public enum DigestInfo {

@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import SignCore
 
 @Suite("Router dispatch")
@@ -20,7 +21,10 @@ struct RouterTests {
     func certificates() async throws {
         let router = Router(service: StubSigningService())
         let outcome = await router.route(request("GET", "/api/v1/signature/getCertificates"))
-        guard case .response(let response) = outcome else { Issue.record("beklenen response"); return }
+        guard case .response(let response) = outcome else {
+            Issue.record("beklenen response")
+            return
+        }
         #expect(try statusField(response) == "NOT_IMPLEMENTED")
     }
 
@@ -28,7 +32,10 @@ struct RouterTests {
     func signBadBody() async throws {
         let router = Router(service: StubSigningService())
         let outcome = await router.route(request("POST", "/api/v1/signature/sign", body: Data("{}".utf8)))
-        guard case .response(let response) = outcome else { Issue.record("beklenen response"); return }
+        guard case .response(let response) = outcome else {
+            Issue.record("beklenen response")
+            return
+        }
         #expect(response.status == 400)
         #expect(try statusField(response) == "ERROR")
     }
@@ -38,7 +45,10 @@ struct RouterTests {
         let router = Router(service: StubSigningService())
         let preflightRequest = request("OPTIONS", "/api/v1/signature/sign", origin: "https://www.turkiye.gov.tr")
         let outcome = await router.route(preflightRequest)
-        guard case .response(let response) = outcome else { Issue.record("beklenen response"); return }
+        guard case .response(let response) = outcome else {
+            Issue.record("beklenen response")
+            return
+        }
         #expect(response.status == 204)
         #expect(response.headers["access-control-allow-origin"] == "https://www.turkiye.gov.tr")
     }
@@ -47,7 +57,10 @@ struct RouterTests {
     func stream() async throws {
         let router = Router(service: StubSigningService())
         let outcome = await router.route(request("GET", "/api/v1/usb-stream"))
-        guard case .eventStream(let stream) = outcome else { Issue.record("beklenen eventStream"); return }
+        guard case .eventStream(let stream) = outcome else {
+            Issue.record("beklenen eventStream")
+            return
+        }
         var seen: [CardStatus] = []
         for await event in stream { seen.append(event.status) }
         #expect(seen == [.absent])
@@ -57,7 +70,10 @@ struct RouterTests {
     func unknown() async throws {
         let router = Router(service: StubSigningService())
         let outcome = await router.route(request("GET", "/api/v1/yok"))
-        guard case .response(let response) = outcome else { Issue.record("beklenen response"); return }
+        guard case .response(let response) = outcome else {
+            Issue.record("beklenen response")
+            return
+        }
         #expect(response.status == 404)
     }
 

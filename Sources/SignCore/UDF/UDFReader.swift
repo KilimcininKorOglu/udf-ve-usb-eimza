@@ -33,10 +33,12 @@ public enum UDFReader {
                 document.pageFormat = child.children.first { $0.name == "pageFormat" }?.attributes ?? []
             case "styles":
                 document.styles = child.children.filter { $0.name == "style" }
-                    .map { UDFStyle(
-                        name: $0.attributes.value("name") ?? "",
-                        attributes: $0.attributes.filter { $0.name != "name" }
-                    ) }
+                    .map {
+                        UDFStyle(
+                            name: $0.attributes.value("name") ?? "",
+                            attributes: $0.attributes.filter { $0.name != "name" }
+                        )
+                    }
             case "elements":
                 document.elements = child.children.compactMap(mapElement)
             default:
@@ -155,8 +157,8 @@ private final class RawNodeBuilder: NSObject, XMLParserDelegate {
         stack.last?.cdata += string
     }
 
-    func parser(_ parser: XMLParser, foundCDATA CDATABlock: Data) {
-        stack.last?.cdata += String(decoding: CDATABlock, as: UTF8.self)
+    func parser(_ parser: XMLParser, foundCDATA cdataBlock: Data) {
+        stack.last?.cdata += String(decoding: cdataBlock, as: UTF8.self)
     }
 
     func parser(

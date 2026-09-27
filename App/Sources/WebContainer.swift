@@ -1,6 +1,6 @@
+import SignCore
 import SwiftUI
 import WebKit
-import SignCore
 
 #if os(macOS)
 typealias PlatformViewRepresentable = NSViewRepresentable

@@ -1,4 +1,5 @@
 import Foundation
+
 @testable import SignCore
 
 /// In-memory card for tests. Answers SELECT and READ BINARY over a map of

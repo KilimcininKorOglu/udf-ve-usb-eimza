@@ -52,10 +52,12 @@ public enum UDFAttributedText {
             paragraphRuns.append(run)
         }
         if !paragraphRuns.isEmpty || nsText.length == 0 {
-            elements.append(.paragraph(UDFParagraph(
-                attributes: [UDFAttribute("resolver", defaultStyle.name)],
-                runs: paragraphRuns
-            )))
+            elements.append(
+                .paragraph(
+                    UDFParagraph(
+                        attributes: [UDFAttribute("resolver", defaultStyle.name)],
+                        runs: paragraphRuns
+                    )))
         }
         return UDFDocument(
             formatID: formatID,

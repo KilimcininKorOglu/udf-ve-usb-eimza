@@ -1,7 +1,8 @@
+import Crypto
 import Foundation
 import Testing
-import Crypto
 import _CryptoExtras
+
 @testable import SignCore
 
 @Suite("XAdES builder")
@@ -37,12 +38,14 @@ struct XAdESBuilderTests {
 
         let xmlsec = "/opt/homebrew/bin/xmlsec1"
         try #require(FileManager.default.fileExists(atPath: xmlsec), "xmlsec1 kurulu değil")
-        let (status, output) = try run(xmlsec, [
-            "--verify", "--insecure",
-            "--id-attr:Id", "http://www.w3.org/2000/09/xmldsig#:Object",
-            "--id-attr:Id", "http://uri.etsi.org/01903/v1.3.2#:SignedProperties",
-            xmlURL.path,
-        ])
+        let (status, output) = try run(
+            xmlsec,
+            [
+                "--verify", "--insecure",
+                "--id-attr:Id", "http://www.w3.org/2000/09/xmldsig#:Object",
+                "--id-attr:Id", "http://uri.etsi.org/01903/v1.3.2#:SignedProperties",
+                xmlURL.path,
+            ])
         #expect(status == 0, "xmlsec1 doğrulaması başarısız: \(output)")
         #expect(output.contains("OK"))
     }

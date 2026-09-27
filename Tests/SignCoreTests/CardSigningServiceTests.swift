@@ -1,6 +1,7 @@
+import Crypto
 import Foundation
 import Testing
-import Crypto
+
 @testable import SignCore
 
 /// A virtual card that serves a certificate over PKCS#15 and answers the

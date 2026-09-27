@@ -1,5 +1,5 @@
-import SwiftUI
 import SignCore
+import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var model: AppModel
@@ -161,7 +161,7 @@ struct WebPortalView: View {
         WebContainer(url: portal.url, router: model.router)
             .navigationTitle(portal.name)
             #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+        .navigationBarTitleDisplayMode(.inline)
             #endif
             .ignoresSafeArea(edges: .bottom)
     }

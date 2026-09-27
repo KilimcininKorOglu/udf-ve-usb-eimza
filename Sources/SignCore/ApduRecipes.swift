@@ -8,8 +8,9 @@ public enum ApduRecipes {
     /// SELECT by 2-byte file identifier under the current DF.
     public static func selectFileID(_ fid: UInt16, expectFCP: Bool = true) -> Data {
         let p2: UInt8 = expectFCP ? 0x00 : 0x0C
-        return apdu(cla: 0x00, ins: 0xA4, p1: 0x02, p2: p2,
-                    data: Data([UInt8(fid >> 8), UInt8(fid & 0xFF)]))
+        return apdu(
+            cla: 0x00, ins: 0xA4, p1: 0x02, p2: p2,
+            data: Data([UInt8(fid >> 8), UInt8(fid & 0xFF)]))
     }
 
     /// SELECT the master file (MF, 3F00), the ISO/IEC 7816-4 name for the root DF.

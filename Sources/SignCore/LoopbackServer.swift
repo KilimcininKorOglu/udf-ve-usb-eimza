@@ -76,7 +76,8 @@ public final class LoopbackServer: @unchecked Sendable {
             let encoder = JSONEncoder()
             for await event in stream {
                 guard let json = try? encoder.encode(event),
-                      let text = String(data: json, encoding: .utf8) else { continue }
+                    let text = String(data: json, encoding: .utf8)
+                else { continue }
                 let frame = "data: \(text)\n\n"
                 self.send(Data(frame.utf8), on: connection, close: false)
             }
@@ -95,8 +96,10 @@ public final class LoopbackServer: @unchecked Sendable {
     }
 
     private func send(_ data: Data, on connection: NWConnection, close: Bool) {
-        connection.send(content: data, completion: .contentProcessed { _ in
-            if close { connection.cancel() }
-        })
+        connection.send(
+            content: data,
+            completion: .contentProcessed { _ in
+                if close { connection.cancel() }
+            })
     }
 }

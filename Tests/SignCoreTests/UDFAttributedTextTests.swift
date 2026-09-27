@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import SignCore
 
 #if canImport(AppKit)
@@ -18,13 +19,14 @@ struct UDFAttributedTextTests {
         let plainAttrs = [UDFAttribute("family", "Helvetica"), UDFAttribute("size", "12")]
         let boldAttrs = plainAttrs + [UDFAttribute("bold", "true")]
         document.elements = [
-            .paragraph(UDFParagraph(
-                attributes: [UDFAttribute("resolver", "default")],
-                runs: [
-                    UDFContentRun(startOffset: 0, length: 3, attributes: plainAttrs),
-                    UDFContentRun(startOffset: 3, length: 3, attributes: boldAttrs),
-                ]
-            )),
+            .paragraph(
+                UDFParagraph(
+                    attributes: [UDFAttribute("resolver", "default")],
+                    runs: [
+                        UDFContentRun(startOffset: 0, length: 3, attributes: plainAttrs),
+                        UDFContentRun(startOffset: 3, length: 3, attributes: boldAttrs),
+                    ]
+                ))
         ]
         let attributed = UDFAttributedText.attributedString(from: document)
         #expect(attributed.string == "abcABC")
@@ -49,7 +51,8 @@ struct UDFAttributedTextTests {
         #expect(document.text == "Normal Kalın")
 
         guard case .paragraph(let paragraph) = document.elements.first else {
-            Issue.record("paragraf yok"); return
+            Issue.record("paragraf yok")
+            return
         }
         let boldRun = paragraph.textRuns.first { $0.attributes.value("bold") == "true" }
         #expect(boldRun != nil)

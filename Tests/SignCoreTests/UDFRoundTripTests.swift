@@ -1,5 +1,6 @@
 import Foundation
 import Testing
+
 @testable import SignCore
 
 @Suite("UDF read and write")
@@ -18,7 +19,8 @@ struct UDFRoundTripTests {
         #expect(document.pageFormat.value("paperOrientation") == "1")
 
         guard case .paragraph(let paragraph)? = document.elements.first else {
-            Issue.record("ilk eleman paragraf değil"); return
+            Issue.record("ilk eleman paragraf değil")
+            return
         }
         #expect(paragraph.attributes.value("resolver") == "hvl-default")
         #expect(paragraph.textRuns.first?.length == 1)
@@ -38,10 +40,11 @@ struct UDFRoundTripTests {
         document.text = "Merhaba dünya"
         document.styles = [UDFStyle(name: "default", attributes: [UDFAttribute("family", "Times New Roman")])]
         document.elements = [
-            .paragraph(UDFParagraph(
-                attributes: [UDFAttribute("resolver", "default")],
-                runs: [UDFContentRun(startOffset: 0, length: 13)]
-            )),
+            .paragraph(
+                UDFParagraph(
+                    attributes: [UDFAttribute("resolver", "default")],
+                    runs: [UDFContentRun(startOffset: 0, length: 13)]
+                ))
         ]
         let data = try UDFWriter.write(document)
         let reparsed = try UDFReader.read(udf: data)
@@ -55,17 +58,28 @@ struct UDFRoundTripTests {
         document.text = "AB"
         document.styles = [UDFStyle(name: "default", attributes: [])]
         document.elements = [
-            .table(UDFTable(attributes: [UDFAttribute("tableName", "t1")], rows: [
-                UDFRow(attributes: [], cells: [
-                    UDFCell(attributes: [UDFAttribute("columnSpan", "1")], elements: [
-                        .paragraph(UDFParagraph(attributes: [UDFAttribute("resolver", "default")],
-                                                runs: [UDFContentRun(startOffset: 0, length: 1)])),
-                    ]),
-                ]),
-            ])),
+            .table(
+                UDFTable(
+                    attributes: [UDFAttribute("tableName", "t1")],
+                    rows: [
+                        UDFRow(
+                            attributes: [],
+                            cells: [
+                                UDFCell(
+                                    attributes: [UDFAttribute("columnSpan", "1")],
+                                    elements: [
+                                        .paragraph(
+                                            UDFParagraph(
+                                                attributes: [UDFAttribute("resolver", "default")],
+                                                runs: [UDFContentRun(startOffset: 0, length: 1)]))
+                                    ])
+                            ])
+                    ])),
             .image(UDFImage(attributes: [UDFAttribute("imageData", "AAAA")])),
-            .field(UDFField(attributes: [UDFAttribute("fieldType", "date")],
-                            runs: [UDFContentRun(startOffset: 1, length: 1)])),
+            .field(
+                UDFField(
+                    attributes: [UDFAttribute("fieldType", "date")],
+                    runs: [UDFContentRun(startOffset: 1, length: 1)])),
         ]
         let reparsed = try UDFReader.read(udf: try UDFWriter.write(document))
         #expect(reparsed == document)
@@ -74,32 +88,35 @@ struct UDFRoundTripTests {
     @Test("inline field, space and image inside a paragraph round-trip in order")
     func inlineParagraphItems() throws {
         let xml = """
-        <?xml version="1.0" encoding="UTF-8" ?>
-        <template format_id="1.7" >
-        <content><![CDATA[ABCDE]]></content><properties><pageFormat mediaSizeName="1" /></properties>\
-        <styles><style name="default" /></styles>
-        <elements >
-        <paragraph resolver="default">\
-        <content startOffset="0" length="1" />\
-        <field fieldName="getIl" startOffset="1" length="1" />\
-        <space startOffset="2" length="1" />\
-        <image imageData="AAAA" startOffset="3" length="1" />\
-        <content startOffset="4" length="1" />\
-        </paragraph>
-        </elements>
-        </template>
-        """
+            <?xml version="1.0" encoding="UTF-8" ?>
+            <template format_id="1.7" >
+            <content><![CDATA[ABCDE]]></content><properties><pageFormat mediaSizeName="1" /></properties>\
+            <styles><style name="default" /></styles>
+            <elements >
+            <paragraph resolver="default">\
+            <content startOffset="0" length="1" />\
+            <field fieldName="getIl" startOffset="1" length="1" />\
+            <space startOffset="2" length="1" />\
+            <image imageData="AAAA" startOffset="3" length="1" />\
+            <content startOffset="4" length="1" />\
+            </paragraph>
+            </elements>
+            </template>
+            """
         let document = try UDFReader.parse(contentXML: Data(xml.utf8))
         guard case .paragraph(let paragraph)? = document.elements.first else {
-            Issue.record("ilk eleman paragraf değil"); return
+            Issue.record("ilk eleman paragraf değil")
+            return
         }
         #expect(paragraph.inlines.count == 5)
         guard case .field(let field) = paragraph.inlines[1] else {
-            Issue.record("ikinci inline field değil"); return
+            Issue.record("ikinci inline field değil")
+            return
         }
         #expect(field.attributes.value("fieldName") == "getIl")
         guard case .image = paragraph.inlines[3] else {
-            Issue.record("dördüncü inline image değil"); return
+            Issue.record("dördüncü inline image değil")
+            return
         }
 
         let reparsed = try UDFReader.read(udf: try UDFWriter.write(document))
@@ -109,31 +126,34 @@ struct UDFRoundTripTests {
     @Test("header and footer map to typed sections and round-trip")
     func headerFooterSections() throws {
         let xml = """
-        <?xml version="1.0" encoding="UTF-8" ?>
-        <template format_id="1.7" >
-        <content><![CDATA[X]]></content><properties><pageFormat mediaSizeName="1" /></properties>\
-        <styles><style name="default" /></styles>
-        <elements >
-        <header startPage="2" background="-1">\
-        <paragraph resolver="default"><content startOffset="0" length="1" /></paragraph>\
-        </header>
-        <paragraph resolver="default"><content startOffset="0" length="1" /></paragraph>
-        <footer background="-1">\
-        <paragraph resolver="default"><content startOffset="0" length="1" /></paragraph>\
-        </footer>
-        </elements>
-        </template>
-        """
+            <?xml version="1.0" encoding="UTF-8" ?>
+            <template format_id="1.7" >
+            <content><![CDATA[X]]></content><properties><pageFormat mediaSizeName="1" /></properties>\
+            <styles><style name="default" /></styles>
+            <elements >
+            <header startPage="2" background="-1">\
+            <paragraph resolver="default"><content startOffset="0" length="1" /></paragraph>\
+            </header>
+            <paragraph resolver="default"><content startOffset="0" length="1" /></paragraph>
+            <footer background="-1">\
+            <paragraph resolver="default"><content startOffset="0" length="1" /></paragraph>\
+            </footer>
+            </elements>
+            </template>
+            """
         let document = try UDFReader.parse(contentXML: Data(xml.utf8))
         guard case .header(let header)? = document.elements.first else {
-            Issue.record("ilk eleman header değil"); return
+            Issue.record("ilk eleman header değil")
+            return
         }
         #expect(header.attributes.value("startPage") == "2")
         guard case .paragraph = header.elements.first else {
-            Issue.record("header içinde paragraf yok"); return
+            Issue.record("header içinde paragraf yok")
+            return
         }
         guard case .footer(let footer) = document.elements.last else {
-            Issue.record("son eleman footer değil"); return
+            Issue.record("son eleman footer değil")
+            return
         }
         #expect(footer.attributes.value("background") == "-1")
 
@@ -144,19 +164,20 @@ struct UDFRoundTripTests {
     @Test("an unrecognised element is preserved verbatim")
     func rawElementPreserved() throws {
         let xml = """
-        <?xml version="1.0" encoding="UTF-8" ?>
-        <template format_id="1.7" >
-        <content><![CDATA[X]]></content><properties><pageFormat mediaSizeName="1" /></properties>\
-        <styles><style name="default" /></styles>
-        <elements >
-        <sidenote kind="ek"><content startOffset="0" length="1" /></sidenote>
-        <paragraph resolver="default"><content startOffset="0" length="1" /></paragraph>
-        </elements>
-        </template>
-        """
+            <?xml version="1.0" encoding="UTF-8" ?>
+            <template format_id="1.7" >
+            <content><![CDATA[X]]></content><properties><pageFormat mediaSizeName="1" /></properties>\
+            <styles><style name="default" /></styles>
+            <elements >
+            <sidenote kind="ek"><content startOffset="0" length="1" /></sidenote>
+            <paragraph resolver="default"><content startOffset="0" length="1" /></paragraph>
+            </elements>
+            </template>
+            """
         let document = try UDFReader.parse(contentXML: Data(xml.utf8))
         guard case .raw(let note)? = document.elements.first else {
-            Issue.record("ilk eleman raw değil"); return
+            Issue.record("ilk eleman raw değil")
+            return
         }
         #expect(note.name == "sidenote")
         #expect(note.attributes.value("kind") == "ek")

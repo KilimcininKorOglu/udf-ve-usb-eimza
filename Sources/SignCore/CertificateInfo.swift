@@ -1,7 +1,7 @@
-import Foundation
 import Crypto
-import X509
+import Foundation
 import SwiftASN1
+import X509
 
 /// Parses an X.509 certificate into the entry exposed over the API.
 public enum CertificateInfo {

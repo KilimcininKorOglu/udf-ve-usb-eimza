@@ -1,5 +1,5 @@
-import Foundation
 import Crypto
+import Foundation
 import X509
 
 /// Builds an enveloping XAdES-BES signature (XML-DSig plus SignedProperties),
@@ -43,13 +43,15 @@ public struct XAdESBuilder: Sendable {
         let toBeSigned = try Canonicalizer.canonicalize(signedInfo)
         let signatureValue = try await sign(toBeSigned).base64EncodedString()
 
-        let document = assemble(ids: ids, parts: SignatureParts(
-            signedInfo: signedInfo,
-            signatureValue: signatureValue,
-            certificateBase64: certificateDER.base64EncodedString(),
-            objectXML: objectXML,
-            signedProperties: signedProps
-        ))
+        let document = assemble(
+            ids: ids,
+            parts: SignatureParts(
+                signedInfo: signedInfo,
+                signatureValue: signatureValue,
+                certificateBase64: certificateDER.base64EncodedString(),
+                objectXML: objectXML,
+                signedProperties: signedProps
+            ))
         return Data(document.utf8)
     }
 
@@ -70,22 +72,22 @@ public struct XAdESBuilder: Sendable {
         let serial = decimalString(Array(certificate.serialNumber.bytes))
         let time = iso8601(Date())
         return """
-        <xades:SignedProperties xmlns:xades="\(NS.xades)" xmlns:ds="\(NS.ds)" Id="\(id)">\
-        <xades:SignedSignatureProperties>\
-        <xades:SigningTime>\(time)</xades:SigningTime>\
-        <xades:SigningCertificate><xades:Cert>\
-        <xades:CertDigest>\
-        <ds:DigestMethod Algorithm="\(NS.sha256)"></ds:DigestMethod>\
-        <ds:DigestValue>\(certDigest)</ds:DigestValue>\
-        </xades:CertDigest>\
-        <xades:IssuerSerial>\
-        <ds:X509IssuerName>\(issuer)</ds:X509IssuerName>\
-        <ds:X509SerialNumber>\(serial)</ds:X509SerialNumber>\
-        </xades:IssuerSerial>\
-        </xades:Cert></xades:SigningCertificate>\
-        </xades:SignedSignatureProperties>\
-        </xades:SignedProperties>
-        """
+            <xades:SignedProperties xmlns:xades="\(NS.xades)" xmlns:ds="\(NS.ds)" Id="\(id)">\
+            <xades:SignedSignatureProperties>\
+            <xades:SigningTime>\(time)</xades:SigningTime>\
+            <xades:SigningCertificate><xades:Cert>\
+            <xades:CertDigest>\
+            <ds:DigestMethod Algorithm="\(NS.sha256)"></ds:DigestMethod>\
+            <ds:DigestValue>\(certDigest)</ds:DigestValue>\
+            </xades:CertDigest>\
+            <xades:IssuerSerial>\
+            <ds:X509IssuerName>\(issuer)</ds:X509IssuerName>\
+            <ds:X509SerialNumber>\(serial)</ds:X509SerialNumber>\
+            </xades:IssuerSerial>\
+            </xades:Cert></xades:SigningCertificate>\
+            </xades:SignedSignatureProperties>\
+            </xades:SignedProperties>
+            """
     }
 
     private func signedInfoElement(ids: Identifiers, objectDigest: String, signedPropsDigest: String) -> String {

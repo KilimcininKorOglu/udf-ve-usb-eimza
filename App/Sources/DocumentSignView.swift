@@ -1,6 +1,6 @@
+import SignCore
 import SwiftUI
 import UniformTypeIdentifiers
-import SignCore
 
 /// Signs a local document with a card certificate.
 struct DocumentSignView: View {
@@ -42,7 +42,9 @@ struct DocumentSignView: View {
 
     private var documentSection: some View {
         Section("Belge") {
-            Button { importing = true } label: {
+            Button {
+                importing = true
+            } label: {
                 Label(fileURL?.lastPathComponent ?? "Bir belge seçin", systemImage: "doc.badge.plus")
             }
         }

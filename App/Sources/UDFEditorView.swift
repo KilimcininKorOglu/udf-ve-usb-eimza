@@ -1,6 +1,6 @@
+import SignCore
 import SwiftUI
 import UniformTypeIdentifiers
-import SignCore
 
 /// A full UDF editor: opens a `.udf` document into a TextKit view, edits its
 /// rich text with a formatting toolbar, and writes it back to a `.udf` archive.
@@ -40,19 +40,39 @@ struct UDFEditorView: View {
 
     private var toolbar: some View {
         HStack(spacing: 12) {
-            Button { newDocument() } label: { Image(systemName: "doc.badge.plus") }
-                .help("Yeni belge")
-            Button { importing = true } label: { Image(systemName: "folder") }
-                .help("Belge aç")
-            Button { save() } label: { Image(systemName: "square.and.arrow.down") }
-                .help("Kaydet")
+            Button {
+                newDocument()
+            } label: {
+                Image(systemName: "doc.badge.plus")
+            }
+            .help("Yeni belge")
+            Button {
+                importing = true
+            } label: {
+                Image(systemName: "folder")
+            }
+            .help("Belge aç")
+            Button {
+                save()
+            } label: {
+                Image(systemName: "square.and.arrow.down")
+            }
+            .help("Kaydet")
 
             Divider().frame(height: 18)
 
-            Button { controller.toggleBold() } label: { Image(systemName: "bold") }
-                .help("Kalın")
-            Button { controller.toggleItalic() } label: { Image(systemName: "italic") }
-                .help("İtalik")
+            Button {
+                controller.toggleBold()
+            } label: {
+                Image(systemName: "bold")
+            }
+            .help("Kalın")
+            Button {
+                controller.toggleItalic()
+            } label: {
+                Image(systemName: "italic")
+            }
+            .help("İtalik")
 
             Picker("Boyut", selection: $fontSize) {
                 ForEach([9, 10, 11, 12, 13, 14, 16, 18, 24, 36] as [CGFloat], id: \.self) { size in

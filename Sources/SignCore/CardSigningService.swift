@@ -1,5 +1,5 @@
-import Foundation
 import Crypto
+import Foundation
 
 /// Wires the card transport, PKCS#15 reader and signature builders behind the
 /// loopback endpoints.
@@ -144,8 +144,8 @@ public struct CardSigningService: SigningService {
         case CardError.pinIncorrect(let retries):
             return retries.map { "PIN hatalı, kalan deneme: \($0)" } ?? "PIN hatalı"
         case CardError.fileNotFound: return "Kart dizini okunamadı"
-        case let CardError.apduFailed(sw): return String(format: "Kart komutu başarısız: %04X", sw)
-        case let CardError.parse(reason): return reason
+        case CardError.apduFailed(let sw): return String(format: "Kart komutu başarısız: %04X", sw)
+        case CardError.parse(let reason): return reason
         default: return "İşlem başarısız"
         }
     }

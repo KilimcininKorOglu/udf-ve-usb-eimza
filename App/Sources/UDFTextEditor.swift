@@ -1,5 +1,5 @@
-import SwiftUI
 import SignCore
+import SwiftUI
 
 #if canImport(AppKit)
 import AppKit

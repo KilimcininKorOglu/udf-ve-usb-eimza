@@ -1,6 +1,6 @@
 import Foundation
-import SwiftUI
 import SignCore
+import SwiftUI
 
 /// Owns the signing service, the loopback server and the live card status.
 @MainActor
@@ -65,8 +65,9 @@ final class AppModel: ObservableObject {
         )
         let envelope = await service.sign(request)
         guard envelope.metadata.status == .ok,
-              let base64 = envelope.data?.signedDataBase64,
-              let data = Data(base64Encoded: base64) else {
+            let base64 = envelope.data?.signedDataBase64,
+            let data = Data(base64Encoded: base64)
+        else {
             return .failure(envelope.metadata.message ?? "İmza başarısız")
         }
         return .success(data)
@@ -96,18 +97,23 @@ struct Requirement: Identifiable, Hashable {
 
 enum PortalCatalog {
     static let portals: [Portal] = [
-        Portal(name: "UYAP Avukat Girişi", subtitle: nil,
-               url: URL(string: "https://avukat.uyap.gov.tr")!),
-        Portal(name: "e-Devlet Girişi",
-               subtitle: "Nitelikli e-imza ile oturum açın",
-               url: URL(string: "https://giris.turkiye.gov.tr")!),
-        Portal(name: "UETS e-Tebligat", subtitle: nil,
-               url: URL(string: "https://ptt.etebligat.gov.tr/login")!),
-        Portal(name: "PTT KEP", subtitle: nil,
-               url: URL(string: "https://ptt.hs01.kep.tr")!),
-        Portal(name: "e-Devlet, işlem kodunu elle girin",
-               subtitle: "Başka bir uygulamada başlattığınız girişin kodunu buraya yazın",
-               url: URL(string: "https://giris.turkiye.gov.tr")!),
+        Portal(
+            name: "UYAP Avukat Girişi", subtitle: nil,
+            url: URL(string: "https://avukat.uyap.gov.tr")!),
+        Portal(
+            name: "e-Devlet Girişi",
+            subtitle: "Nitelikli e-imza ile oturum açın",
+            url: URL(string: "https://giris.turkiye.gov.tr")!),
+        Portal(
+            name: "UETS e-Tebligat", subtitle: nil,
+            url: URL(string: "https://ptt.etebligat.gov.tr/login")!),
+        Portal(
+            name: "PTT KEP", subtitle: nil,
+            url: URL(string: "https://ptt.hs01.kep.tr")!),
+        Portal(
+            name: "e-Devlet, işlem kodunu elle girin",
+            subtitle: "Başka bir uygulamada başlattığınız girişin kodunu buraya yazın",
+            url: URL(string: "https://giris.turkiye.gov.tr")!),
     ]
 
     static let requirements: [Requirement] = [
@@ -120,9 +126,9 @@ enum PortalCatalog {
     ]
 
     static let footer = """
-    İmza akışı şöyle işler: açılan sayfadaki işlem kodu okunur, imza \
-    karttaki anahtarla üretilir ve sunucuya iletilir. Uygulama sayfanın \
-    içeriğine karışmaz; girişi sayfanın kendisi bitirir. Girdiğiniz PIN \
-    yalnızca karta gönderilir, hiçbir yerde saklanmaz.
-    """
+        İmza akışı şöyle işler: açılan sayfadaki işlem kodu okunur, imza \
+        karttaki anahtarla üretilir ve sunucuya iletilir. Uygulama sayfanın \
+        içeriğine karışmaz; girişi sayfanın kendisi bitirir. Girdiğiniz PIN \
+        yalnızca karta gönderilir, hiçbir yerde saklanmaz.
+        """
 }

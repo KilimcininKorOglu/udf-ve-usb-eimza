@@ -1,5 +1,5 @@
-import Foundation
 import Clibxml2
+import Foundation
 
 /// Inclusive XML canonicalization (C14N 1.0) via libxml2.
 public enum Canonicalizer {
@@ -10,11 +10,13 @@ public enum Canonicalizer {
     /// canonical form.
     public static func canonicalize(_ xml: String) throws -> Data {
         let bytes = [UInt8](xml.utf8)
-        guard let doc = bytes.withUnsafeBufferPointer({ buffer -> xmlDocPtr? in
-            buffer.baseAddress?.withMemoryRebound(to: CChar.self, capacity: buffer.count) { chars in
-                xmlReadMemory(chars, Int32(buffer.count), "fragment.xml", nil, Int32(XML_PARSE_NOBLANKS.rawValue))
-            }
-        }) else {
+        guard
+            let doc = bytes.withUnsafeBufferPointer({ buffer -> xmlDocPtr? in
+                buffer.baseAddress?.withMemoryRebound(to: CChar.self, capacity: buffer.count) { chars in
+                    xmlReadMemory(chars, Int32(buffer.count), "fragment.xml", nil, Int32(XML_PARSE_NOBLANKS.rawValue))
+                }
+            })
+        else {
             throw CardError.parse("XML ayrıştırılamadı")
         }
         defer { xmlFreeDoc(doc) }

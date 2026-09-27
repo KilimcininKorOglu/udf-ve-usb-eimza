@@ -1,6 +1,6 @@
 import Foundation
-import WebKit
 import SignCore
+import WebKit
 
 /// Bridges the web page's requests to the local signing service. Government
 /// pages are HTTPS and cannot fetch the HTTP loopback directly (mixed
@@ -65,14 +65,16 @@ final class WebBridge: NSObject, WKScriptMessageHandler {
         didReceive message: WKScriptMessage
     ) {
         guard let dict = message.body as? [String: Any],
-              let kind = dict["kind"] as? String else { return }
+            let kind = dict["kind"] as? String
+        else { return }
         if kind == "fetch" { handleFetch(dict) }
     }
 
     private func handleFetch(_ dict: [String: Any]) {
         guard let id = dict["id"] as? String,
-              let urlString = dict["url"] as? String,
-              let url = URL(string: urlString) else { return }
+            let urlString = dict["url"] as? String,
+            let url = URL(string: urlString)
+        else { return }
         let request = buildRequest(dict, url: url)
         Task { [weak self] in
             guard let self else { return }
@@ -103,7 +105,8 @@ final class WebBridge: NSObject, WKScriptMessageHandler {
 
     @MainActor
     private func deliver(id: String, response: HTTPResponse) {
-        let headersJSON = (try? JSONSerialization.data(withJSONObject: response.headers))
+        let headersJSON =
+            (try? JSONSerialization.data(withJSONObject: response.headers))
             .flatMap { String(data: $0, encoding: .utf8) } ?? "{}"
         let bodyB64 = response.body.base64EncodedString()
         let escaped = headersJSON.replacingOccurrences(of: "\\", with: "\\\\")

@@ -11,9 +11,9 @@ public struct UDFAttribute: Equatable, Sendable {
     }
 }
 
-public extension Array where Element == UDFAttribute {
+extension Array where Element == UDFAttribute {
     /// The value of the first attribute with the given name.
-    func value(_ name: String) -> String? {
+    public func value(_ name: String) -> String? {
         first { $0.name == name }?.value
     }
 }

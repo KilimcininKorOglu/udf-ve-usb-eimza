@@ -1,8 +1,9 @@
-import Foundation
 import Crypto
-import _CryptoExtras
-import X509
+import Foundation
 import SwiftASN1
+import X509
+import _CryptoExtras
+
 @testable import SignCore
 
 /// Builds a self-signed certificate for tests, with a chosen TCKN in the

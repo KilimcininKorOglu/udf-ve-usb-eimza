@@ -1,5 +1,5 @@
-import Foundation
 @preconcurrency import CryptoTokenKit
+import Foundation
 
 /// Card access backed by CryptoTokenKit. Works on macOS and on iOS/iPadOS 16+
 /// with a USB-C connected CCID reader; the same slot manager serves all.
