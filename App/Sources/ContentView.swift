@@ -9,23 +9,23 @@ struct ContentView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            ZStack {
-                Picker("", selection: $tab) {
-                    Text("Portallar").tag(Tab.portals)
-                    Text("Belge İmzala").tag(Tab.document)
-                    Text("Hakkında").tag(Tab.about)
-                }
-                .pickerStyle(.segmented)
-                .labelsHidden()
-                .frame(maxWidth: 420)
-
-                HStack {
-                    Spacer()
-                    StatusBadge()
-                }
-                .padding(.trailing, 12)
+            HStack {
+                Spacer()
+                StatusBadge()
             }
-            .padding(.vertical, 10)
+            .padding(.horizontal, 12)
+            .padding(.top, 8)
+
+            Picker("", selection: $tab) {
+                Text("Portallar").tag(Tab.portals)
+                Text("Belge İmzala").tag(Tab.document)
+                Text("Hakkında").tag(Tab.about)
+            }
+            .pickerStyle(.segmented)
+            .labelsHidden()
+            .frame(maxWidth: 420)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
 
             Divider()
 
@@ -38,7 +38,9 @@ struct ContentView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
         }
+        #if os(macOS)
         .frame(minWidth: 480, minHeight: 640)
+        #endif
     }
 }
 
@@ -74,7 +76,10 @@ struct PortalsView: View {
                 Section { Text(PortalCatalog.footer).font(.footnote).foregroundStyle(.secondary) }
             }
             .formStyle(.grouped)
-            .navigationTitle("e-İmza")
+            .navigationTitle("Portallar")
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             .navigationDestination(for: Portal.self) { portal in
                 WebPortalView(portal: portal)
             }
@@ -122,7 +127,7 @@ struct StatusBadge: View {
         .padding(.horizontal, 10)
         .padding(.vertical, 5)
         .background(.thinMaterial, in: Capsule())
-        .overlay(Capsule().strokeBorder(.separator, lineWidth: 0.5))
+        .overlay(Capsule().strokeBorder(Color.gray.opacity(0.3), lineWidth: 0.5))
         .help(model.statusMessage)
     }
 
@@ -153,6 +158,9 @@ struct WebPortalView: View {
     var body: some View {
         WebContainer(url: portal.url, router: model.router)
             .navigationTitle(portal.name)
+            #if os(iOS)
+            .navigationBarTitleDisplayMode(.inline)
+            #endif
             .ignoresSafeArea(edges: .bottom)
     }
 }
