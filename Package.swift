@@ -15,6 +15,7 @@ let package = Package(
         .package(url: "https://github.com/apple/swift-asn1.git", from: "1.2.0"),
         .package(url: "https://github.com/apple/swift-certificates.git", from: "1.5.0"),
         .package(url: "https://github.com/apple/swift-crypto.git", from: "3.0.0"),
+        .package(url: "https://github.com/weichsel/ZIPFoundation.git", from: "0.9.0"),
     ],
     targets: [
         .systemLibrary(name: "Clibxml2", path: "Sources/Clibxml2"),
@@ -25,6 +26,7 @@ let package = Package(
                 .product(name: "SwiftASN1", package: "swift-asn1"),
                 .product(name: "X509", package: "swift-certificates"),
                 .product(name: "Crypto", package: "swift-crypto"),
+                .product(name: "ZIPFoundation", package: "ZIPFoundation"),
             ]
         ),
         .executableTarget(
@@ -38,7 +40,8 @@ let package = Package(
                 .product(name: "X509", package: "swift-certificates"),
                 .product(name: "Crypto", package: "swift-crypto"),
                 .product(name: "_CryptoExtras", package: "swift-crypto"),
-            ]
+            ],
+            resources: [.copy("Resources/sample.udf")]
         ),
     ]
 )
