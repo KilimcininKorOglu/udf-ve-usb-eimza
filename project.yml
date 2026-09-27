@@ -18,7 +18,7 @@ targets:
         product: SignCore
     settings:
       base:
-        PRODUCT_BUNDLE_IDENTIFIER: com.keremgok.udfeimza
+        PRODUCT_BUNDLE_IDENTIFIER: com.keremgok.usbeimza
         GENERATE_INFOPLIST_FILE: YES
         MARKETING_VERSION: "1.0.0"
         CURRENT_PROJECT_VERSION: "1"
