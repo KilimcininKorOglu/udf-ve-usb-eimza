@@ -1,5 +1,6 @@
 import Foundation
 import Crypto
+import _CryptoExtras
 import X509
 import SwiftASN1
 @testable import SignCore
@@ -7,9 +8,38 @@ import SwiftASN1
 /// Builds a self-signed certificate for tests, with a chosen TCKN in the
 /// subject serialNumber attribute and an optional nonRepudiation KeyUsage.
 enum TestCertificateFactory {
+    /// An RSA signer with its self-signed certificate DER.
+    struct RSAIdentity {
+        let der: Data
+        let key: _RSA.Signing.PrivateKey
+    }
+
+    static func makeRSA(tckn: String, nonRepudiation: Bool) throws -> RSAIdentity {
+        let key = try _RSA.Signing.PrivateKey(keySize: .bits2048)
+        let der = try makeDER(
+            tckn: tckn,
+            nonRepudiation: nonRepudiation,
+            certKey: Certificate.PrivateKey(key),
+            signatureAlgorithm: .sha256WithRSAEncryption
+        )
+        return RSAIdentity(der: der, key: key)
+    }
+
     static func makeDER(tckn: String, nonRepudiation: Bool) throws -> Data {
-        let key = P256.Signing.PrivateKey()
-        let certKey = Certificate.PrivateKey(key)
+        try makeDER(
+            tckn: tckn,
+            nonRepudiation: nonRepudiation,
+            certKey: Certificate.PrivateKey(P256.Signing.PrivateKey()),
+            signatureAlgorithm: .ecdsaWithSHA256
+        )
+    }
+
+    private static func makeDER(
+        tckn: String,
+        nonRepudiation: Bool,
+        certKey: Certificate.PrivateKey,
+        signatureAlgorithm: Certificate.SignatureAlgorithm
+    ) throws -> Data {
 
         let serialAttribute = try RelativeDistinguishedName.Attribute(
             type: CertificateInfo.serialNumberAttributeOID,
@@ -33,7 +63,7 @@ enum TestCertificateFactory {
             notValidAfter: Date().addingTimeInterval(3600),
             issuer: subject,
             subject: subject,
-            signatureAlgorithm: .ecdsaWithSHA256,
+            signatureAlgorithm: signatureAlgorithm,
             extensions: extensions,
             issuerPrivateKey: certKey
         )

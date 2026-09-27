@@ -31,7 +31,12 @@ let package = Package(
         ),
         .testTarget(
             name: "SignCoreTests",
-            dependencies: ["SignCore"]
+            dependencies: [
+                "SignCore",
+                .product(name: "X509", package: "swift-certificates"),
+                .product(name: "Crypto", package: "swift-crypto"),
+                .product(name: "_CryptoExtras", package: "swift-crypto"),
+            ]
         ),
     ]
 )
