@@ -9,13 +9,21 @@ struct ContentView: View {
 
     var body: some View {
         VStack(spacing: 0) {
-            Picker("", selection: $tab) {
-                Text("Portallar").tag(Tab.portals)
-                Text("Belge İmzala").tag(Tab.document)
+            ZStack {
+                Picker("", selection: $tab) {
+                    Text("Portallar").tag(Tab.portals)
+                    Text("Belge İmzala").tag(Tab.document)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .frame(maxWidth: 360)
+
+                HStack {
+                    Spacer()
+                    StatusBadge()
+                }
+                .padding(.trailing, 12)
             }
-            .pickerStyle(.segmented)
-            .labelsHidden()
-            .frame(maxWidth: 360)
             .padding(.vertical, 10)
 
             Divider()
@@ -70,7 +78,6 @@ struct PortalsView: View {
             .navigationDestination(for: Portal.self) { portal in
                 WebPortalView(portal: portal)
             }
-            .toolbar { ToolbarItem(placement: .automatic) { StatusBadge() } }
         }
     }
 
@@ -105,13 +112,17 @@ struct StatusBadge: View {
 
     var body: some View {
         HStack(spacing: 6) {
-            Circle().fill(color).frame(width: 9, height: 9)
+            Circle().fill(color).frame(width: 8, height: 8)
             Text(label)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
                 .fixedSize()
         }
+        .padding(.horizontal, 10)
+        .padding(.vertical, 5)
+        .background(.thinMaterial, in: Capsule())
+        .overlay(Capsule().strokeBorder(.separator, lineWidth: 0.5))
         .help(model.statusMessage)
     }
 
