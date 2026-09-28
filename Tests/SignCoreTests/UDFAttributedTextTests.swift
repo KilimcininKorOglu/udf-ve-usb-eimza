@@ -173,6 +173,21 @@ struct UDFAttributedTextTests {
         #expect(headers.first == header)
     }
 
+    @Test("a built header section keeps its text through a save")
+    func headerTextSurvives() throws {
+        let header = UDFAttributedText.makeSection(text: "Mahkeme", keeping: [UDFAttribute("startPage", "1")])
+        let body = UDFParagraph(runs: [UDFContentRun(startOffset: 0, length: 1, attributes: [])])
+        let document = UDFDocument(text: "X", elements: [.paragraph(body), .header(header)])
+
+        let rebuilt = roundTrip(document)
+        let rebuiltHeader = rebuilt.elements.compactMap { element -> UDFSection? in
+            if case .header(let section) = element { return section }
+            return nil
+        }.first
+        let section = try #require(rebuiltHeader)
+        #expect(UDFAttributedText.sectionText(section, source: rebuilt.text) == "Mahkeme")
+    }
+
     @Test("an empty document yields a single paragraph")
     func emptyDocument() {
         let rebuilt = roundTrip(UDFDocument())

@@ -60,6 +60,18 @@ final class UDFEditorController: ObservableObject {
         }
     }
 
+    /// Applies a named style's font attributes to the selection.
+    func applyNamedStyle(_ attributes: [UDFAttribute]) {
+        modifyFonts { font in
+            let traits = fontTraits(font)
+            let family = attributes.value("family") ?? font.familyName ?? "Helvetica"
+            let size = CGFloat(Double(attributes.value("size") ?? "") ?? Double(font.pointSize))
+            let bold = attributes.value("bold").map { $0 == "true" } ?? traits.bold
+            let italic = attributes.value("italic").map { $0 == "true" } ?? traits.italic
+            return makeFont(family: family, size: size, bold: bold, italic: italic)
+        }
+    }
+
     func toggleUnderline() {
         guard let textView, let storage = textStorage(textView) else { return }
         let range = selectedRange(textView)

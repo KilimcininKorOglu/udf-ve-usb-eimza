@@ -20,6 +20,7 @@ struct UDFEditorView: View {
     @State private var showingTable = false
     @State private var editingTable = false
     @State private var tableGrid: [[String]]?
+    @State private var showingPage = false
     @State private var exporting = false
     @State private var exportDocument: UDFFileDocument?
     @State private var message: String?
@@ -49,12 +50,17 @@ struct UDFEditorView: View {
                 if editingTable { controller.replaceSelectedTable(with: table) } else { controller.insertTable(table) }
             }
         }
+        .sheet(isPresented: $showingPage) {
+            PageSetupView(template: template) { updated in template = updated }
+        }
     }
 
     private var udfTypes: [UTType] {
         [UTType(filenameExtension: "udf") ?? .data]
     }
+}
 
+extension UDFEditorView {
     private var toolbar: some View {
         VStack(spacing: 4) {
             ScrollView(.horizontal, showsIndicators: false) {
@@ -78,6 +84,8 @@ struct UDFEditorView: View {
                     insertGroup
                     bar
                     fieldGroup
+                    bar
+                    pageGroup
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
@@ -186,6 +194,23 @@ struct UDFEditorView: View {
             toolButton("plus.magnifyingglass", "Resmi büyüt") { controller.resizeSelectedImage(scale: 1.25) }
             toolButton("minus.magnifyingglass", "Resmi küçült") { controller.resizeSelectedImage(scale: 0.8) }
             toolButton("tablecells", "Tablo") { openTable() }
+        }
+    }
+
+    private var pageGroup: some View {
+        HStack(spacing: 8) {
+            Menu {
+                ForEach(template.styles.indices, id: \.self) { index in
+                    Button(template.styles[index].name) {
+                        controller.applyNamedStyle(template.styles[index].attributes)
+                    }
+                }
+            } label: {
+                Image(systemName: "textformat.size").frame(width: 22)
+            }
+            .menuIndicator(.hidden)
+            .help("Stil uygula")
+            toolButton("gearshape", "Sayfa düzeni") { showingPage = true }
         }
     }
 
