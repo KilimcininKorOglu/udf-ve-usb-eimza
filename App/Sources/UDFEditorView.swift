@@ -11,11 +11,19 @@ struct UDFEditorView: View {
     @State private var documentID = UUID()
     @State private var pageFormat: [UDFAttribute] = []
     @State private var fileName = "belge.udf"
+    @State private var fontFamily = "Helvetica"
     @State private var fontSize: CGFloat = 13
+    @State private var textColor = Color.primary
+    @State private var highlightColor = Color.yellow
     @State private var importing = false
+    @State private var importingImage = false
     @State private var exporting = false
     @State private var exportDocument: UDFFileDocument?
     @State private var message: String?
+
+    private let families = [
+        "Helvetica", "Arial", "Times New Roman", "Georgia", "Courier New", "Verdana",
+    ]
 
     var body: some View {
         VStack(spacing: 0) {
@@ -26,6 +34,7 @@ struct UDFEditorView: View {
         }
         .navigationTitle("UDF Editör")
         .fileImporter(isPresented: $importing, allowedContentTypes: udfTypes) { handleOpen($0) }
+        .fileImporter(isPresented: $importingImage, allowedContentTypes: [.image]) { handleImage($0) }
         .fileExporter(
             isPresented: $exporting,
             document: exportDocument,
@@ -39,58 +48,114 @@ struct UDFEditorView: View {
     }
 
     private var toolbar: some View {
-        HStack(spacing: 12) {
-            Button {
-                newDocument()
-            } label: {
-                Image(systemName: "doc.badge.plus")
-            }
-            .help("Yeni belge")
-            Button {
-                importing = true
-            } label: {
-                Image(systemName: "folder")
-            }
-            .help("Belge aç")
-            Button {
-                save()
-            } label: {
-                Image(systemName: "square.and.arrow.down")
-            }
-            .help("Kaydet")
-
-            Divider().frame(height: 18)
-
-            Button {
-                controller.toggleBold()
-            } label: {
-                Image(systemName: "bold")
-            }
-            .help("Kalın")
-            Button {
-                controller.toggleItalic()
-            } label: {
-                Image(systemName: "italic")
-            }
-            .help("İtalik")
-
-            Picker("Boyut", selection: $fontSize) {
-                ForEach([9, 10, 11, 12, 13, 14, 16, 18, 24, 36] as [CGFloat], id: \.self) { size in
-                    Text("\(Int(size))").tag(size)
+        VStack(spacing: 4) {
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 10) {
+                    fileGroup
+                    bar
+                    historyGroup
+                    bar
+                    fontGroup
+                    bar
+                    styleGroup
+                    bar
+                    colorGroup
+                    bar
+                    alignGroup
+                    bar
+                    listGroup
+                    bar
+                    insertGroup
                 }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 8)
+                .buttonStyle(.borderless)
             }
-            .labelsHidden()
-            .frame(width: 70)
-            .onChange(of: fontSize) { newValue in controller.setSize(newValue) }
-
-            Spacer()
             if let message {
                 Text(message).font(.caption).foregroundStyle(.secondary)
             }
         }
-        .padding(.horizontal, 12)
-        .padding(.vertical, 8)
-        .buttonStyle(.borderless)
+    }
+
+    private var bar: some View { Divider().frame(height: 20) }
+
+    private func toolButton(_ symbol: String, _ help: String, _ action: @escaping () -> Void) -> some View {
+        Button(action: action) { Image(systemName: symbol).frame(width: 22) }.help(help)
+    }
+
+    private var fileGroup: some View {
+        HStack(spacing: 8) {
+            toolButton("doc.badge.plus", "Yeni belge") { newDocument() }
+            toolButton("folder", "Belge aç") { importing = true }
+            toolButton("square.and.arrow.down", "Kaydet") { save() }
+        }
+    }
+
+    private var historyGroup: some View {
+        HStack(spacing: 8) {
+            toolButton("arrow.uturn.backward", "Geri al") { controller.undo() }
+            toolButton("arrow.uturn.forward", "İleri al") { controller.redo() }
+        }
+    }
+
+    private var fontGroup: some View {
+        HStack(spacing: 8) {
+            Picker("Yazı tipi", selection: $fontFamily) {
+                ForEach(families, id: \.self) { Text($0).tag($0) }
+            }
+            .labelsHidden().frame(width: 140)
+            .onChange(of: fontFamily) { controller.setFontFamily($0) }
+
+            Picker("Boyut", selection: $fontSize) {
+                ForEach([8, 9, 10, 11, 12, 13, 14, 16, 18, 20, 24, 28, 36, 48] as [CGFloat], id: \.self) {
+                    Text("\(Int($0))").tag($0)
+                }
+            }
+            .labelsHidden().frame(width: 64)
+            .onChange(of: fontSize) { controller.setSize($0) }
+        }
+    }
+
+    private var styleGroup: some View {
+        HStack(spacing: 8) {
+            toolButton("bold", "Kalın") { controller.toggleBold() }
+            toolButton("italic", "İtalik") { controller.toggleItalic() }
+            toolButton("underline", "Altı çizili") { controller.toggleUnderlineStrikethrough(strikethrough: false) }
+            toolButton("strikethrough", "Üstü çizili") { controller.toggleUnderlineStrikethrough(strikethrough: true) }
+        }
+    }
+
+    private var colorGroup: some View {
+        HStack(spacing: 8) {
+            ColorPicker("Metin rengi", selection: $textColor, supportsOpacity: false)
+                .labelsHidden()
+                .onChange(of: textColor) { controller.setForegroundColor(platformColor($0)) }
+            ColorPicker("Vurgu", selection: $highlightColor, supportsOpacity: false)
+                .labelsHidden()
+                .onChange(of: highlightColor) { controller.setHighlightColor(platformColor($0)) }
+        }
+    }
+
+    private var alignGroup: some View {
+        HStack(spacing: 8) {
+            toolButton("text.alignleft", "Sola") { controller.setAlignment(.left) }
+            toolButton("text.aligncenter", "Ortala") { controller.setAlignment(.center) }
+            toolButton("text.alignright", "Sağa") { controller.setAlignment(.right) }
+            toolButton("text.justify", "İki yana") { controller.setAlignment(.justified) }
+        }
+    }
+
+    private var listGroup: some View {
+        HStack(spacing: 8) {
+            toolButton("list.bullet", "Madde listesi") { controller.makeList(numbered: false) }
+            toolButton("list.number", "Numaralı liste") { controller.makeList(numbered: true) }
+            toolButton("decrease.indent", "Girintiyi azalt") { controller.indent(by: -24) }
+            toolButton("increase.indent", "Girinti ekle") { controller.indent(by: 24) }
+        }
+    }
+
+    private var insertGroup: some View {
+        toolButton("photo", "Resim ekle") { importingImage = true }
     }
 
     private func newDocument() {
@@ -131,6 +196,17 @@ struct UDFEditorView: View {
         }
     }
 
+    private func handleImage(_ result: Result<URL, Error>) {
+        guard case .success(let url) = result else { return }
+        let access = url.startAccessingSecurityScopedResource()
+        defer { if access { url.stopAccessingSecurityScopedResource() } }
+        guard let data = try? Data(contentsOf: url) else {
+            message = "Resim okunamadı"
+            return
+        }
+        controller.insertImage(data: data)
+    }
+
     private var defaultFont: UDFFont {
         makeFont(family: "Helvetica", size: fontSize, bold: false, italic: false)
     }
@@ -151,3 +227,11 @@ struct UDFFileDocument: FileDocument {
         FileWrapper(regularFileWithContents: data)
     }
 }
+
+#if canImport(AppKit)
+import AppKit
+private func platformColor(_ color: Color) -> UDFColor { NSColor(color) }
+#elseif canImport(UIKit)
+import UIKit
+private func platformColor(_ color: Color) -> UDFColor { UIColor(color) }
+#endif

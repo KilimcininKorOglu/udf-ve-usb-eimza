@@ -53,6 +53,90 @@ final class UDFEditorController: ObservableObject {
         }
     }
 
+    func setFontFamily(_ family: String) {
+        modifyFonts { font in
+            let traits = fontTraits(font)
+            return makeFont(family: family, size: font.pointSize, bold: traits.bold, italic: traits.italic)
+        }
+    }
+
+    func toggleUnderline() {
+        guard let textView, let storage = textStorage(textView) else { return }
+        let range = selectedRange(textView)
+        guard range.length > 0 else { return }
+        let current = storage.attribute(.underlineStyle, at: range.location, effectiveRange: nil) as? Int ?? 0
+        let value = current == 0 ? NSUnderlineStyle.single.rawValue : 0
+        storage.addAttribute(.underlineStyle, value: value, range: range)
+    }
+
+    func setForegroundColor(_ color: UDFColor) {
+        applyToSelection(.foregroundColor, color)
+    }
+
+    func setAlignment(_ alignment: NSTextAlignment) {
+        applyParagraphStyle { $0.alignment = alignment }
+    }
+
+    func toggleUnderlineStrikethrough(strikethrough: Bool) {
+        let key: NSAttributedString.Key = strikethrough ? .strikethroughStyle : .underlineStyle
+        guard let textView, let storage = textStorage(textView) else { return }
+        let range = selectedRange(textView)
+        guard range.length > 0 else { return }
+        let current = storage.attribute(key, at: range.location, effectiveRange: nil) as? Int ?? 0
+        storage.addAttribute(key, value: current == 0 ? NSUnderlineStyle.single.rawValue : 0, range: range)
+    }
+
+    func setHighlightColor(_ color: UDFColor) {
+        applyToSelection(.backgroundColor, color)
+    }
+
+    func makeList(numbered: Bool) {
+        let format: NSTextList.MarkerFormat = numbered ? .decimal : .disc
+        applyParagraphStyle { style in
+            style.textLists = [NSTextList(markerFormat: format, options: 0)]
+            style.firstLineHeadIndent = 12
+            style.headIndent = 24
+        }
+    }
+
+    func indent(by delta: CGFloat) {
+        applyParagraphStyle { style in
+            style.firstLineHeadIndent = max(0, style.firstLineHeadIndent + delta)
+            style.headIndent = max(0, style.headIndent + delta)
+        }
+    }
+
+    func insertImage(data: Data) {
+        guard let textView, let storage = textStorage(textView), let image = platformImage(data) else { return }
+        let attachment = NSTextAttachment()
+        attachment.image = image
+        storage.insert(NSAttributedString(attachment: attachment), at: selectedRange(textView).location)
+    }
+
+    func undo() { textView?.undoManager?.undo() }
+    func redo() { textView?.undoManager?.redo() }
+
+    private func applyToSelection(_ key: NSAttributedString.Key, _ value: Any) {
+        guard let textView, let storage = textStorage(textView) else { return }
+        let range = selectedRange(textView)
+        guard range.length > 0 else { return }
+        storage.addAttribute(key, value: value, range: range)
+    }
+
+    private func applyParagraphStyle(_ transform: (NSMutableParagraphStyle) -> Void) {
+        guard let textView, let storage = textStorage(textView), storage.length > 0 else { return }
+        let selected = selectedRange(textView)
+        let base = selected.length > 0 ? selected : NSRange(location: 0, length: storage.length)
+        let target = (storage.string as NSString).paragraphRange(for: base)
+        storage.enumerateAttribute(.paragraphStyle, in: target) { value, subRange, _ in
+            let style =
+                (value as? NSParagraphStyle)?.mutableCopy() as? NSMutableParagraphStyle
+                ?? NSMutableParagraphStyle()
+            transform(style)
+            storage.addAttribute(.paragraphStyle, value: style, range: subRange)
+        }
+    }
+
     private func modifyFonts(_ transform: (UDFFont) -> UDFFont) {
         guard let textView, let storage = textStorage(textView) else { return }
         let range = selectedRange(textView)
@@ -68,9 +152,11 @@ final class UDFEditorController: ObservableObject {
     #if canImport(AppKit)
     private func textStorage(_ view: NSTextView) -> NSTextStorage? { view.textStorage }
     private func selectedRange(_ view: NSTextView) -> NSRange { view.selectedRange() }
+    private func platformImage(_ data: Data) -> NSImage? { NSImage(data: data) }
     #elseif canImport(UIKit)
     private func textStorage(_ view: UITextView) -> NSTextStorage? { view.textStorage }
     private func selectedRange(_ view: UITextView) -> NSRange { view.selectedRange }
+    private func platformImage(_ data: Data) -> UIImage? { UIImage(data: data) }
     #endif
 }
 
