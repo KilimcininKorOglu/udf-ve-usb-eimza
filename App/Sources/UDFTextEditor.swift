@@ -106,6 +106,21 @@ final class UDFEditorController: ObservableObject {
         }
     }
 
+    func setLineSpacing(_ spacing: CGFloat) {
+        applyParagraphStyle { $0.lineSpacing = spacing }
+    }
+
+    func toggleBaseline(superscript: Bool) {
+        guard let textView, let storage = textStorage(textView) else { return }
+        let range = selectedRange(textView)
+        guard range.length > 0 else { return }
+        let current = storage.attribute(.baselineOffset, at: range.location, effectiveRange: nil) as? CGFloat ?? 0
+        let font = storage.attribute(.font, at: range.location, effectiveRange: nil) as? UDFFont
+        let magnitude = (font?.pointSize ?? 12) * 0.35
+        let target = superscript ? magnitude : -magnitude
+        storage.addAttribute(.baselineOffset, value: current == 0 ? target : 0, range: range)
+    }
+
     func insertImage(data: Data) {
         guard let textView, let storage = textStorage(textView), let image = platformImage(data) else { return }
         let attachment = NSTextAttachment()

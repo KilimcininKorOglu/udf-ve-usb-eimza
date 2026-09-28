@@ -65,6 +65,8 @@ struct UDFEditorView: View {
                     bar
                     listGroup
                     bar
+                    spacingGroup
+                    bar
                     insertGroup
                 }
                 .padding(.horizontal, 12)
@@ -122,7 +124,21 @@ struct UDFEditorView: View {
             toolButton("italic", "İtalik") { controller.toggleItalic() }
             toolButton("underline", "Altı çizili") { controller.toggleUnderlineStrikethrough(strikethrough: false) }
             toolButton("strikethrough", "Üstü çizili") { controller.toggleUnderlineStrikethrough(strikethrough: true) }
+            toolButton("textformat.superscript", "Üst simge") { controller.toggleBaseline(superscript: true) }
+            toolButton("textformat.subscript", "Alt simge") { controller.toggleBaseline(superscript: false) }
         }
+    }
+
+    private var spacingGroup: some View {
+        Menu {
+            Button("Tek") { controller.setLineSpacing(0) }
+            Button("1,5 satır") { controller.setLineSpacing(6) }
+            Button("Çift") { controller.setLineSpacing(12) }
+        } label: {
+            Image(systemName: "arrow.up.and.down.text.horizontal").frame(width: 22)
+        }
+        .menuIndicator(.hidden)
+        .help("Satır aralığı")
     }
 
     private var colorGroup: some View {

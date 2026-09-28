@@ -191,6 +191,9 @@ public enum UDFAttributedText {
         if attributes.value("strikethrough") == "true" {
             result[.strikethroughStyle] = NSUnderlineStyle.single.rawValue
         }
+        if let raw = attributes.value("baselineOffset"), let value = Double(raw) {
+            result[.baselineOffset] = CGFloat(value)
+        }
         return result
     }
 
@@ -219,6 +222,9 @@ public enum UDFAttributedText {
         }
         if (attrs[.underlineStyle] as? Int ?? 0) != 0 { out.append(UDFAttribute("underline", "true")) }
         if (attrs[.strikethroughStyle] as? Int ?? 0) != 0 { out.append(UDFAttribute("strikethrough", "true")) }
+        if let offset = attrs[.baselineOffset] as? CGFloat, offset != 0 {
+            out.append(UDFAttribute("baselineOffset", String(Int(offset.rounded()))))
+        }
         return out
     }
 

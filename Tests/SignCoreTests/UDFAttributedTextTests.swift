@@ -36,6 +36,7 @@ struct UDFAttributedTextTests {
                 UDFAttribute("bold", "true"),
                 UDFAttribute("underline", "true"),
                 UDFAttribute("foreground", "#FF0000"),
+                UDFAttribute("baselineOffset", "5"),
             ]
         )
         let paragraph = UDFParagraph(attributes: [UDFAttribute("alignment", "2")], runs: [run])
@@ -50,6 +51,7 @@ struct UDFAttributedTextTests {
         #expect(rebuiltRun.attributes.value("bold") == "true")
         #expect(rebuiltRun.attributes.value("underline") == "true")
         #expect(rebuiltRun.attributes.value("family") == "Helvetica")
+        #expect(rebuiltRun.attributes.value("baselineOffset") == "5")
         let hex = try #require(rebuiltRun.attributes.value("foreground"))
         let color = try #require(color(fromHex: hex))
         let rgb = components(color)
