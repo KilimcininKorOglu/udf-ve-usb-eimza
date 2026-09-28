@@ -18,6 +18,10 @@ jobs:
       - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
       - name: Toolchain
         run: swift --version && xcodebuild -version
+      # The XAdES suite verifies its output with the xmlsec1 CLI; openssl (used
+      # by the CAdES suite) ships with the runner.
+      - name: Install xmlsec1
+        run: brew install xmlsec1
       - name: Build
         run: swift build
       - name: Test
