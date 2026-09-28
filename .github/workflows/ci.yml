@@ -15,7 +15,7 @@ jobs:
     name: Build and test (SwiftPM)
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Toolchain
         run: swift --version && xcodebuild -version
       # The XAdES suite verifies its output with the xmlsec1 CLI; openssl (used
@@ -31,7 +31,7 @@ jobs:
     name: Lint and format
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install tools
         run: brew install swiftlint swift-format
       # --strict fails on warnings; the repo config pins cyclomatic_complexity at 10.
@@ -44,7 +44,7 @@ jobs:
     name: App build (macOS and iOS)
     runs-on: macos-15
     steps:
-      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Install XcodeGen
         run: brew install xcodegen
       - name: Generate project
