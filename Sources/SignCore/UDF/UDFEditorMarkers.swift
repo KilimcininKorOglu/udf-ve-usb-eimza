@@ -22,9 +22,13 @@ extension NSAttributedString.Key {
 final class UDFElementAttachment: NSTextAttachment {
     let element: UDFElement
 
-    init(element: UDFElement) {
+    init(element: UDFElement, source: NSString) {
         self.element = element
         super.init(data: nil, ofType: nil)
+        if case .table(let table) = element, let rendered = UDFTableRenderer.image(of: table, source: source) {
+            image = rendered
+            bounds = CGRect(origin: .zero, size: UDFTableRenderer.size(of: table))
+        }
     }
 
     @available(*, unavailable)

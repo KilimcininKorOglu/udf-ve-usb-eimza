@@ -105,6 +105,32 @@ struct UDFAttributedTextTests {
         if case .table = rebuilt.elements[1] {} else { Issue.record("ikinci element tablo değil") }
     }
 
+    @Test("table cell text keeps its characters after the offsets are reflowed")
+    func tableCellTextSurvives() throws {
+        let cellRun = UDFContentRun(startOffset: 1, length: 1, attributes: [])
+        let cell = UDFCell(elements: [.paragraph(UDFParagraph(runs: [cellRun]))])
+        let table = UDFTable(rows: [UDFRow(cells: [cell])])
+        let body = UDFParagraph(runs: [UDFContentRun(startOffset: 0, length: 1, attributes: [])])
+        let document = UDFDocument(text: "AB", elements: [.paragraph(body), .table(table)])
+
+        let rebuilt = roundTrip(document)
+        let rebuiltTable = try #require(
+            rebuilt.elements.compactMap { element -> UDFTable? in
+                if case .table(let value) = element { return value }
+                return nil
+            }.first)
+        let rebuiltCellRun = try #require(firstCellRun(rebuiltTable))
+        let text = rebuilt.text as NSString
+        let range = NSRange(location: rebuiltCellRun.startOffset, length: rebuiltCellRun.length)
+        #expect(range.location + range.length <= text.length)
+        #expect(text.substring(with: range) == "B")
+    }
+
+    private func firstCellRun(_ table: UDFTable) -> UDFContentRun? {
+        guard case .paragraph(let paragraph)? = table.rows.first?.cells.first?.elements.first else { return nil }
+        return paragraph.textRuns.first
+    }
+
     @Test("page format, styles, and headers are preserved from the template")
     func templateFurniturePreserved() throws {
         let pageFormat = [UDFAttribute("mediaSizeName", "A4"), UDFAttribute("leftMargin", "72")]

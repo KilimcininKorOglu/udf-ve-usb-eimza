@@ -17,6 +17,9 @@ struct UDFEditorView: View {
     @State private var highlightColor = Color.yellow
     @State private var importing = false
     @State private var importingImage = false
+    @State private var showingTable = false
+    @State private var editingTable = false
+    @State private var tableGrid: [[String]]?
     @State private var exporting = false
     @State private var exportDocument: UDFFileDocument?
     @State private var message: String?
@@ -41,6 +44,11 @@ struct UDFEditorView: View {
             contentType: udfTypes.first ?? .data,
             defaultFilename: fileName
         ) { _ in }
+        .sheet(isPresented: $showingTable) {
+            TableEditorSheet(initial: tableGrid, title: editingTable ? "Tabloyu düzenle" : "Tablo ekle") { table in
+                if editingTable { controller.replaceSelectedTable(with: table) } else { controller.insertTable(table) }
+            }
+        }
     }
 
     private var udfTypes: [UTType] {
@@ -175,7 +183,19 @@ struct UDFEditorView: View {
             toolButton("photo", "Resim ekle") { importingImage = true }
             toolButton("plus.magnifyingglass", "Resmi büyüt") { controller.resizeSelectedImage(scale: 1.25) }
             toolButton("minus.magnifyingglass", "Resmi küçült") { controller.resizeSelectedImage(scale: 0.8) }
+            toolButton("tablecells", "Tablo") { openTable() }
         }
+    }
+
+    private func openTable() {
+        if let table = controller.selectedTable() {
+            tableGrid = UDFAttributedText.grid(of: table, source: template.text)
+            editingTable = true
+        } else {
+            tableGrid = nil
+            editingTable = false
+        }
+        showingTable = true
     }
 
     private func newDocument() {

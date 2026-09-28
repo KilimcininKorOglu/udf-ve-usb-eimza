@@ -154,6 +154,38 @@ final class UDFEditorController: ObservableObject {
         return CGRect(x: 0, y: 0, width: maxWidth, height: size.height * scale)
     }
 
+    func insertTable(_ table: UDFTable) {
+        guard let textView, let storage = textStorage(textView) else { return }
+        storage.insert(UDFAttributedText.tableString(table), at: selectedRange(textView).location)
+    }
+
+    func selectedTable() -> UDFTable? { tableHit()?.table }
+
+    func replaceSelectedTable(with table: UDFTable) {
+        guard let textView, let storage = textStorage(textView), let range = tableHit()?.range else { return }
+        storage.replaceCharacters(in: range, with: UDFAttributedText.tableString(table))
+    }
+
+    private func tableHit() -> (table: UDFTable, range: NSRange)? {
+        guard let textView, let storage = textStorage(textView), storage.length > 0 else { return nil }
+        let selected = selectedRange(textView)
+        let scan = scanRange(selected, length: storage.length)
+        var hit: (UDFTable, NSRange)?
+        storage.enumerateAttribute(.attachment, in: scan) { value, subRange, stop in
+            if let attachment = value as? NSTextAttachment, let table = UDFAttributedText.table(in: attachment) {
+                hit = (table, subRange)
+                stop.pointee = true
+            }
+        }
+        return hit
+    }
+
+    private func scanRange(_ selected: NSRange, length: Int) -> NSRange {
+        if selected.length > 0 { return selected }
+        if selected.location < length { return NSRange(location: selected.location, length: 1) }
+        return NSRange(location: selected.location - 1, length: 1)
+    }
+
     func undo() { textView?.undoManager?.undo() }
     func redo() { textView?.undoManager?.redo() }
 

@@ -58,7 +58,7 @@ public enum UDFAttributedText {
         case .header, .footer:
             break  // Page furniture; edited through the page panel, not the body.
         default:
-            result.append(blockAttachment(for: element))
+            result.append(blockAttachment(for: element, source: source))
         }
     }
 
@@ -91,7 +91,7 @@ public enum UDFAttributedText {
         case .image(let raw):
             if let image = inlineImageAttachment(raw) { result.append(image) }
         case .raw(let raw):
-            result.append(blockAttachment(for: .raw(raw)))
+            result.append(blockAttachment(for: .raw(raw), source: context.source))
         }
     }
 
@@ -132,12 +132,15 @@ public enum UDFAttributedText {
             consume(attributed, attrs: attrs, range: range, into: builder)
         }
         let body = builder.finish()
+        let merged = mergeSidecar(body: body, template: template)
+        var text = ""
+        let elements = UDFTextReflow.flatten(merged, source: template.text as NSString, into: &text)
         return UDFDocument(
             formatID: template.formatID,
-            text: builder.flatText,
+            text: text,
             pageFormat: template.pageFormat,
             styles: template.styles.isEmpty ? [UDFStyle(name: "default", attributes: [])] : template.styles,
-            elements: mergeSidecar(body: body, template: template)
+            elements: elements
         )
     }
 
@@ -281,8 +284,8 @@ extension UDFAttributedText {
 
     // MARK: Attachments
 
-    private static func blockAttachment(for element: UDFElement) -> NSAttributedString {
-        NSAttributedString(attachment: UDFElementAttachment(element: element))
+    private static func blockAttachment(for element: UDFElement, source: NSString) -> NSAttributedString {
+        NSAttributedString(attachment: UDFElementAttachment(element: element, source: source))
     }
 
     private static func inlineImageAttachment(_ raw: UDFRawElement) -> NSAttributedString? {
@@ -312,11 +315,10 @@ extension UDFAttributedText {
     }
 }
 
-/// Accumulates body elements while walking an edited attributed string: it keeps
-/// the flat document text, the offsets of each run, and flushes a paragraph on
-/// every newline or block element.
+/// Accumulates body elements while walking an edited attributed string. It
+/// flushes a paragraph on every newline or block element and stores each run's
+/// literal text in the `_text` attribute; the reflow pass assigns the offsets.
 private final class BodyBuilder {
-    private(set) var flatText = ""
     private var elements: [UDFElement] = []
     private var inlines: [UDFInline] = []
     private var paragraphAttributes: [UDFAttribute] = []
@@ -325,7 +327,7 @@ private final class BodyBuilder {
     func addText(_ text: String, style: [UDFAttribute], paragraph: [UDFAttribute], field: [UDFAttribute]?) {
         let segments = text.components(separatedBy: "\n")
         for (index, segment) in segments.enumerated() {
-            if index > 0 { newline() }
+            if index > 0 { emitParagraph(force: true) }
             if !segment.isEmpty { appendContent(segment, style: style, paragraph: paragraph, field: field) }
         }
     }
@@ -340,18 +342,11 @@ private final class BodyBuilder {
         elements.append(element)
     }
 
-    /// Emits a trailing paragraph (only if it holds content, or if the document
-    /// would otherwise be empty). A trailing newline leaves no content, so its
-    /// artifact paragraph is not emitted.
+    /// Emits a trailing paragraph only if it holds content, or if the document
+    /// would otherwise be empty; a trailing newline leaves no content.
     func finish() -> [UDFElement] {
         emitParagraph(force: elements.isEmpty)
-        if flatText.hasSuffix("\n") { flatText.removeLast() }
         return elements
-    }
-
-    private func newline() {
-        emitParagraph(force: true)
-        flatText += "\n"
     }
 
     private func appendContent(
@@ -362,13 +357,11 @@ private final class BodyBuilder {
     ) {
         if !hasContent { paragraphAttributes = paragraph }
         hasContent = true
-        let start = (flatText as NSString).length
-        flatText += text
-        let length = (text as NSString).length
+        let carried = style + [UDFAttribute(UDFTextReflow.textKey, text)]
         if let field {
-            inlines.append(.field(UDFContentRun(startOffset: start, length: length, attributes: style + field)))
+            inlines.append(.field(UDFContentRun(startOffset: 0, length: 0, attributes: carried + field)))
         } else {
-            inlines.append(.content(UDFContentRun(startOffset: start, length: length, attributes: style)))
+            inlines.append(.content(UDFContentRun(startOffset: 0, length: 0, attributes: carried)))
         }
     }
 
