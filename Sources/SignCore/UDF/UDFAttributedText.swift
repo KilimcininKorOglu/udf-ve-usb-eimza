@@ -24,6 +24,13 @@ public enum UDFAttributedText {
         "alignment", "leftIndent", "rightIndent", "firstLineIndent", "lineSpacing",
     ]
 
+    /// Run attributes regenerated from the rendered font and colours on save; a
+    /// field marker must not also carry them, or the writer emits each twice.
+    private static let runStyleNames: Set<String> = [
+        "family", "size", "bold", "italic", "foreground", "background",
+        "underline", "strikethrough", "baselineOffset", "resolver",
+    ]
+
     /// The shared rendering inputs for one paragraph's inlines.
     private struct RenderContext {
         let source: NSString
@@ -107,7 +114,7 @@ public enum UDFAttributedText {
         var attributes = textAttributes(from: resolvedAttributes(run: run, styles: context.styles))
         attributes[.paragraphStyle] = context.style
         attributes[.udfParagraphMeta] = context.meta
-        if let field { attributes[.udfField] = field }
+        if let field { attributes[.udfField] = field.filter { !runStyleNames.contains($0.name) } }
         result.append(NSAttributedString(string: text, attributes: attributes))
     }
 
