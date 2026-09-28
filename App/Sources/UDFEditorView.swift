@@ -171,7 +171,11 @@ struct UDFEditorView: View {
     }
 
     private var insertGroup: some View {
-        toolButton("photo", "Resim ekle") { importingImage = true }
+        HStack(spacing: 8) {
+            toolButton("photo", "Resim ekle") { importingImage = true }
+            toolButton("plus.magnifyingglass", "Resmi büyüt") { controller.resizeSelectedImage(scale: 1.25) }
+            toolButton("minus.magnifyingglass", "Resmi küçült") { controller.resizeSelectedImage(scale: 0.8) }
+        }
     }
 
     private func newDocument() {

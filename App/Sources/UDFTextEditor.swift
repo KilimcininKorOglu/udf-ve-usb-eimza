@@ -125,7 +125,33 @@ final class UDFEditorController: ObservableObject {
         guard let textView, let storage = textStorage(textView), let image = platformImage(data) else { return }
         let attachment = NSTextAttachment()
         attachment.image = image
+        attachment.bounds = fittedBounds(imageSize(image))
         storage.insert(NSAttributedString(attachment: attachment), at: selectedRange(textView).location)
+    }
+
+    /// Scales every image in the selection by the given factor, keeping tables
+    /// and other block attachments (which carry no image) untouched.
+    func resizeSelectedImage(scale: CGFloat) {
+        guard let textView, let storage = textStorage(textView) else { return }
+        let range = selectedRange(textView)
+        guard range.length > 0 else { return }
+        storage.beginEditing()
+        storage.enumerateAttribute(.attachment, in: range) { value, subRange, _ in
+            guard let attachment = value as? NSTextAttachment, attachment.image != nil else { return }
+            let bounds = attachment.bounds
+            attachment.bounds = CGRect(x: 0, y: 0, width: bounds.width * scale, height: bounds.height * scale)
+            storage.edited(.editedAttributes, range: subRange, changeInLength: 0)
+        }
+        storage.endEditing()
+    }
+
+    private func fittedBounds(_ size: CGSize) -> CGRect {
+        let maxWidth: CGFloat = 320
+        guard size.width > maxWidth, size.width > 0 else {
+            return CGRect(x: 0, y: 0, width: size.width, height: size.height)
+        }
+        let scale = maxWidth / size.width
+        return CGRect(x: 0, y: 0, width: maxWidth, height: size.height * scale)
     }
 
     func undo() { textView?.undoManager?.undo() }
@@ -168,10 +194,12 @@ final class UDFEditorController: ObservableObject {
     private func textStorage(_ view: NSTextView) -> NSTextStorage? { view.textStorage }
     private func selectedRange(_ view: NSTextView) -> NSRange { view.selectedRange() }
     private func platformImage(_ data: Data) -> NSImage? { NSImage(data: data) }
+    private func imageSize(_ image: NSImage) -> CGSize { image.size }
     #elseif canImport(UIKit)
     private func textStorage(_ view: UITextView) -> NSTextStorage? { view.textStorage }
     private func selectedRange(_ view: UITextView) -> NSRange { view.selectedRange }
     private func platformImage(_ data: Data) -> UIImage? { UIImage(data: data) }
+    private func imageSize(_ image: UIImage) -> CGSize { image.size }
     #endif
 }
 

@@ -62,7 +62,14 @@ struct UDFAttributedTextTests {
     @Test("an inline image survives a round trip")
     func inlineImageSurvives() throws {
         let base64 = try #require(onePixelPNGBase64())
-        let image = UDFRawElement(name: "image", attributes: [UDFAttribute("imageData", base64)])
+        let image = UDFRawElement(
+            name: "image",
+            attributes: [
+                UDFAttribute("imageData", base64),
+                UDFAttribute("width", "100"),
+                UDFAttribute("height", "50"),
+            ]
+        )
         let paragraph = UDFParagraph(attributes: [], inlines: [.image(image)])
         let document = UDFDocument(text: "", elements: [.paragraph(paragraph)])
 
@@ -75,6 +82,8 @@ struct UDFAttributedTextTests {
         let raw = try #require(inlineImage)
         let data = try #require(raw.attributes.value("imageData").flatMap { Data(base64Encoded: $0) })
         #expect(!data.isEmpty)
+        #expect(raw.attributes.value("width") == "100")
+        #expect(raw.attributes.value("height") == "50")
     }
 
     @Test("a table keeps its content and position as a block")

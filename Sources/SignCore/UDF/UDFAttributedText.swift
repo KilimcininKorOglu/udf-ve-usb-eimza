@@ -177,6 +177,9 @@ public enum UDFAttributedText {
         return result
     }
 
+}
+
+extension UDFAttributedText {
     // MARK: Attribute mapping
 
     private static func textAttributes(from attributes: [UDFAttribute]) -> [NSAttributedString.Key: Any] {
@@ -289,6 +292,9 @@ public enum UDFAttributedText {
         else { return nil }
         let attachment = NSTextAttachment()
         setAttachmentImage(attachment, image)
+        if let width = doubleValue(raw.attributes, "width"), let height = doubleValue(raw.attributes, "height") {
+            attachment.bounds = CGRect(x: 0, y: 0, width: width, height: height)
+        }
         return NSAttributedString(attachment: attachment)
     }
 
@@ -296,7 +302,13 @@ public enum UDFAttributedText {
         guard let data = attachmentPNGData(attachment) else {
             return UDFRawElement(name: "image")
         }
-        return UDFRawElement(name: "image", attributes: [UDFAttribute("imageData", data.base64EncodedString())])
+        var attributes = [UDFAttribute("imageData", data.base64EncodedString())]
+        let bounds = attachment.bounds
+        if bounds.width > 0, bounds.height > 0 {
+            attributes.append(UDFAttribute("width", String(Int(bounds.width.rounded()))))
+            attributes.append(UDFAttribute("height", String(Int(bounds.height.rounded()))))
+        }
+        return UDFRawElement(name: "image", attributes: attributes)
     }
 }
 
@@ -369,26 +381,3 @@ private final class BodyBuilder {
         hasContent = false
     }
 }
-
-// MARK: Platform image helpers
-
-#if canImport(AppKit)
-private func platformImage(from data: Data) -> NSImage? { NSImage(data: data) }
-
-private func setAttachmentImage(_ attachment: NSTextAttachment, _ image: NSImage) { attachment.image = image }
-
-private func attachmentPNGData(_ attachment: NSTextAttachment) -> Data? {
-    guard let image = attachment.image, let tiff = image.tiffRepresentation,
-        let rep = NSBitmapImageRep(data: tiff)
-    else { return nil }
-    return rep.representation(using: .png, properties: [:])
-}
-#elseif canImport(UIKit)
-private func platformImage(from data: Data) -> UIImage? { UIImage(data: data) }
-
-private func setAttachmentImage(_ attachment: NSTextAttachment, _ image: UIImage) { attachment.image = image }
-
-private func attachmentPNGData(_ attachment: NSTextAttachment) -> Data? {
-    attachment.image?.pngData()
-}
-#endif

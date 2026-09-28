@@ -68,3 +68,26 @@ private func rgbaChannels(_ color: UDFColor) -> ColorChannels {
 private func channel(_ value: CGFloat) -> Int {
     Int((max(0, min(1, value)) * 255).rounded())
 }
+
+// MARK: Platform image helpers
+
+#if canImport(AppKit)
+func platformImage(from data: Data) -> NSImage? { NSImage(data: data) }
+
+func setAttachmentImage(_ attachment: NSTextAttachment, _ image: NSImage) { attachment.image = image }
+
+func attachmentPNGData(_ attachment: NSTextAttachment) -> Data? {
+    guard let image = attachment.image, let tiff = image.tiffRepresentation,
+        let rep = NSBitmapImageRep(data: tiff)
+    else { return nil }
+    return rep.representation(using: .png, properties: [:])
+}
+#elseif canImport(UIKit)
+func platformImage(from data: Data) -> UIImage? { UIImage(data: data) }
+
+func setAttachmentImage(_ attachment: NSTextAttachment, _ image: UIImage) { attachment.image = image }
+
+func attachmentPNGData(_ attachment: NSTextAttachment) -> Data? {
+    attachment.image?.pngData()
+}
+#endif
