@@ -154,6 +154,12 @@ final class UDFEditorController: ObservableObject {
         return CGRect(x: 0, y: 0, width: maxWidth, height: size.height * scale)
     }
 
+    func insertField(name: String, placeholder: String) {
+        guard let textView, let storage = textStorage(textView) else { return }
+        storage.insert(
+            UDFAttributedText.fieldString(name: name, placeholder: placeholder), at: selectedRange(textView).location)
+    }
+
     func insertTable(_ table: UDFTable) {
         guard let textView, let storage = textStorage(textView) else { return }
         storage.insert(UDFAttributedText.tableString(table), at: selectedRange(textView).location)

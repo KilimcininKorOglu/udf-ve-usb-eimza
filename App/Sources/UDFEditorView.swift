@@ -76,6 +76,8 @@ struct UDFEditorView: View {
                     spacingGroup
                     bar
                     insertGroup
+                    bar
+                    fieldGroup
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
@@ -185,6 +187,19 @@ struct UDFEditorView: View {
             toolButton("minus.magnifyingglass", "Resmi küçült") { controller.resizeSelectedImage(scale: 0.8) }
             toolButton("tablecells", "Tablo") { openTable() }
         }
+    }
+
+    private var fieldGroup: some View {
+        Menu {
+            Button("İl") { controller.insertField(name: "getIl", placeholder: "«İl»") }
+            Button("Birim adı") { controller.insertField(name: "getBirimAdi", placeholder: "«Birim adı»") }
+            Button("Tarih") { controller.insertField(name: "getTarih", placeholder: "«Tarih»") }
+            Button("Sayfa no") { controller.insertField(name: "getSayfaNo", placeholder: "«Sayfa no»") }
+        } label: {
+            Image(systemName: "curlybraces").frame(width: 22)
+        }
+        .menuIndicator(.hidden)
+        .help("Dinamik alan ekle")
     }
 
     private func openTable() {

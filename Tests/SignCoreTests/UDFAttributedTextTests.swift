@@ -131,6 +131,25 @@ struct UDFAttributedTextTests {
         return paragraph.textRuns.first
     }
 
+    @Test("a dynamic field round-trips with its field name")
+    func fieldSurvives() throws {
+        let run = UDFContentRun(startOffset: 0, length: 3, attributes: [UDFAttribute("fieldName", "getIl")])
+        let paragraph = UDFParagraph(attributes: [], inlines: [.field(run)])
+        let document = UDFDocument(text: "İst", elements: [.paragraph(paragraph)])
+
+        let rebuilt = roundTrip(document)
+        let result = try #require(firstParagraph(rebuilt))
+        let field = result.inlines.compactMap { inline -> UDFContentRun? in
+            if case .field(let value) = inline { return value }
+            return nil
+        }.first
+        let rebuiltField = try #require(field)
+        #expect(rebuiltField.attributes.value("fieldName") == "getIl")
+        let text = rebuilt.text as NSString
+        let range = NSRange(location: rebuiltField.startOffset, length: rebuiltField.length)
+        #expect(text.substring(with: range) == "İst")
+    }
+
     @Test("page format, styles, and headers are preserved from the template")
     func templateFurniturePreserved() throws {
         let pageFormat = [UDFAttribute("mediaSizeName", "A4"), UDFAttribute("leftMargin", "72")]
