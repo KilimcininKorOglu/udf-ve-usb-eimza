@@ -4,89 +4,192 @@ import Foundation
 import AppKit
 public typealias UDFFont = NSFont
 public typealias UDFColor = NSColor
-private typealias UDFFontDescriptor = NSFontDescriptor
 #elseif canImport(UIKit)
 import UIKit
 public typealias UDFFont = UIFont
 public typealias UDFColor = UIColor
-private typealias UDFFontDescriptor = UIFontDescriptor
 #endif
 
 /// Bridges the UDF model and an `NSAttributedString`. UDF offsets are UTF-16
-/// based, which matches `NSString` and `NSAttributedString`.
+/// based, which matches `NSString` and `NSAttributedString`. The bridge renders
+/// paragraphs (with their runs, inline images and fields) into editable text,
+/// carries tables and other block elements as attachments so they keep their
+/// order, and keeps the page format, styles, headers and footers as a template
+/// that the writer re-applies on save.
 public enum UDFAttributedText {
-    /// Builds an attributed string from a document's paragraphs and runs.
+    /// Paragraph attribute names mapped onto `NSParagraphStyle`; every other
+    /// paragraph attribute (the `resolver` and any custom one) is carried in the
+    /// `udfParagraphMeta` marker so it survives an edit.
+    private static let styleAttributeNames: Set<String> = [
+        "alignment", "leftIndent", "rightIndent", "firstLineIndent", "lineSpacing",
+    ]
+
+    /// The shared rendering inputs for one paragraph's inlines.
+    private struct RenderContext {
+        let source: NSString
+        let style: NSParagraphStyle
+        let meta: [UDFAttribute]
+        let styles: [String: UDFStyle]
+    }
+
+    // MARK: Document to attributed string
+
+    /// Builds an attributed string from a document's body elements. Headers,
+    /// footers, the page format and the styles are not part of the flowing text.
     public static func attributedString(from document: UDFDocument) -> NSAttributedString {
         let styleByName = Dictionary(document.styles.map { ($0.name, $0) }, uniquingKeysWith: { first, _ in first })
         let source = document.text as NSString
         let result = NSMutableAttributedString()
-
         for element in document.elements {
-            guard case .paragraph(let paragraph) = element else { continue }
-            let paragraphStyle = paragraph.attributes.value("resolver")
-            for run in paragraph.textRuns {
-                guard let text = safeSubstring(source, offset: run.startOffset, length: run.length) else { continue }
-                let merged = resolvedAttributes(run: run, paragraphStyle: paragraphStyle, styles: styleByName)
-                result.append(NSAttributedString(string: text, attributes: merged))
+            appendElement(element, into: result, source: source, styles: styleByName)
+        }
+        return result
+    }
+
+    private static func appendElement(
+        _ element: UDFElement,
+        into result: NSMutableAttributedString,
+        source: NSString,
+        styles: [String: UDFStyle]
+    ) {
+        switch element {
+        case .paragraph(let paragraph):
+            appendParagraph(paragraph, into: result, source: source, styles: styles)
+        case .header, .footer:
+            break  // Page furniture; edited through the page panel, not the body.
+        default:
+            result.append(blockAttachment(for: element))
+        }
+    }
+
+    private static func appendParagraph(
+        _ paragraph: UDFParagraph,
+        into result: NSMutableAttributedString,
+        source: NSString,
+        styles: [String: UDFStyle]
+    ) {
+        let style = paragraphStyle(from: paragraph.attributes)
+        let meta = paragraph.attributes.filter { !styleAttributeNames.contains($0.name) }
+        let context = RenderContext(source: source, style: style, meta: meta, styles: styles)
+        for inline in paragraph.inlines {
+            appendInline(inline, into: result, context: context)
+        }
+        let newline = NSAttributedString(string: "\n", attributes: [.paragraphStyle: style, .udfParagraphMeta: meta])
+        result.append(newline)
+    }
+
+    private static func appendInline(
+        _ inline: UDFInline,
+        into result: NSMutableAttributedString,
+        context: RenderContext
+    ) {
+        switch inline {
+        case .content(let run), .space(let run):
+            appendRun(run, field: nil, into: result, context: context)
+        case .field(let run):
+            appendRun(run, field: run.attributes, into: result, context: context)
+        case .image(let raw):
+            if let image = inlineImageAttachment(raw) { result.append(image) }
+        case .raw(let raw):
+            result.append(blockAttachment(for: .raw(raw)))
+        }
+    }
+
+    private static func appendRun(
+        _ run: UDFContentRun,
+        field: [UDFAttribute]?,
+        into result: NSMutableAttributedString,
+        context: RenderContext
+    ) {
+        guard let text = safeSubstring(context.source, offset: run.startOffset, length: run.length),
+            !text.isEmpty
+        else { return }
+        var attributes = textAttributes(from: resolvedAttributes(run: run, styles: context.styles))
+        attributes[.paragraphStyle] = context.style
+        attributes[.udfParagraphMeta] = context.meta
+        if let field { attributes[.udfField] = field }
+        result.append(NSAttributedString(string: text, attributes: attributes))
+    }
+
+    private static func resolvedAttributes(run: UDFContentRun, styles: [String: UDFStyle]) -> [UDFAttribute] {
+        var merged: [UDFAttribute] = []
+        if let name = run.attributes.value("resolver"), let style = styles[name] { merged += style.attributes }
+        merged += run.attributes
+        return merged
+    }
+
+    // MARK: Attributed string to document
+
+    /// Rebuilds a document from an edited attributed string, re-applying the
+    /// template's page format, styles, headers and footers.
+    public static func document(
+        from attributed: NSAttributedString,
+        template: UDFDocument = UDFDocument()
+    ) -> UDFDocument {
+        let builder = BodyBuilder()
+        let full = attributed.length
+        attributed.enumerateAttributes(in: NSRange(location: 0, length: full)) { attrs, range, _ in
+            consume(attributed, attrs: attrs, range: range, into: builder)
+        }
+        let body = builder.finish()
+        return UDFDocument(
+            formatID: template.formatID,
+            text: builder.flatText,
+            pageFormat: template.pageFormat,
+            styles: template.styles.isEmpty ? [UDFStyle(name: "default", attributes: [])] : template.styles,
+            elements: mergeSidecar(body: body, template: template)
+        )
+    }
+
+    private static func consume(
+        _ attributed: NSAttributedString,
+        attrs: [NSAttributedString.Key: Any],
+        range: NSRange,
+        into builder: BodyBuilder
+    ) {
+        if let block = attrs[.attachment] as? UDFElementAttachment {
+            builder.addBlock(block.element)
+            return
+        }
+        if let attachment = attrs[.attachment] as? NSTextAttachment {
+            builder.addImage(rawImage(from: attachment))
+            return
+        }
+        let text = (attributed.string as NSString).substring(with: range)
+        builder.addText(
+            text,
+            style: styleAttributes(from: attrs),
+            paragraph: paragraphAttributes(from: attrs),
+            field: attrs[.udfField] as? [UDFAttribute]
+        )
+    }
+
+    private static func mergeSidecar(body: [UDFElement], template: UDFDocument) -> [UDFElement] {
+        var result = body
+        for (index, element) in template.elements.enumerated() {
+            switch element {
+            case .header, .footer:
+                result.insert(element, at: min(index, result.count))
+            default:
+                break
             }
         }
         return result
     }
 
-    /// Rebuilds a document from an edited attributed string, splitting the text
-    /// into paragraphs on newlines and grouping runs by equal attributes.
-    public static func document(
-        from attributed: NSAttributedString,
-        formatID: String = "1.7",
-        pageFormat: [UDFAttribute] = [],
-        defaultStyle: UDFStyle = UDFStyle(name: "default", attributes: [])
-    ) -> UDFDocument {
-        let fullText = attributed.string
-        var elements: [UDFElement] = []
-        let nsText = fullText as NSString
-        var paragraphRuns: [UDFContentRun] = []
-
-        attributed.enumerateAttributes(in: NSRange(location: 0, length: nsText.length)) { attrs, range, _ in
-            let runAttributes = styleAttributes(from: attrs)
-            let run = UDFContentRun(startOffset: range.location, length: range.length, attributes: runAttributes)
-            paragraphRuns.append(run)
-        }
-        if !paragraphRuns.isEmpty || nsText.length == 0 {
-            elements.append(
-                .paragraph(
-                    UDFParagraph(
-                        attributes: [UDFAttribute("resolver", defaultStyle.name)],
-                        runs: paragraphRuns
-                    )))
-        }
-        return UDFDocument(
-            formatID: formatID,
-            text: fullText,
-            pageFormat: pageFormat,
-            styles: [defaultStyle],
-            elements: elements
-        )
-    }
-
-    // MARK: Attribute resolution
-
-    private static func resolvedAttributes(
-        run: UDFContentRun,
-        paragraphStyle: String?,
-        styles: [String: UDFStyle]
-    ) -> [NSAttributedString.Key: Any] {
-        var merged: [UDFAttribute] = []
-        if let name = paragraphStyle, let style = styles[name] { merged += style.attributes }
-        if let name = run.attributes.value("resolver"), let style = styles[name] { merged += style.attributes }
-        merged += run.attributes
-        return textAttributes(from: merged)
-    }
+    // MARK: Attribute mapping
 
     private static func textAttributes(from attributes: [UDFAttribute]) -> [NSAttributedString.Key: Any] {
-        var result: [NSAttributedString.Key: Any] = [:]
-        result[.font] = font(from: attributes)
+        var result: [NSAttributedString.Key: Any] = [.font: font(from: attributes)]
         if let hex = attributes.value("foreground"), let color = color(fromHex: hex) {
             result[.foregroundColor] = color
+        }
+        if let hex = attributes.value("background"), let color = color(fromHex: hex) {
+            result[.backgroundColor] = color
+        }
+        if attributes.value("underline") == "true" { result[.underlineStyle] = NSUnderlineStyle.single.rawValue }
+        if attributes.value("strikethrough") == "true" {
+            result[.strikethroughStyle] = NSUnderlineStyle.single.rawValue
         }
         return result
     }
@@ -101,13 +204,185 @@ public enum UDFAttributedText {
 
     private static func styleAttributes(from attrs: [NSAttributedString.Key: Any]) -> [UDFAttribute] {
         guard let font = attrs[.font] as? UDFFont else { return [] }
+        let traits = fontTraits(font)
         var out: [UDFAttribute] = [
             UDFAttribute("family", font.familyName ?? "Helvetica"),
             UDFAttribute("size", String(Int(font.pointSize.rounded()))),
+            UDFAttribute("bold", traits.bold ? "true" : "false"),
+            UDFAttribute("italic", traits.italic ? "true" : "false"),
         ]
-        let traits = fontTraits(font)
-        out.append(UDFAttribute("bold", traits.bold ? "true" : "false"))
-        out.append(UDFAttribute("italic", traits.italic ? "true" : "false"))
+        if let color = attrs[.foregroundColor] as? UDFColor {
+            out.append(UDFAttribute("foreground", udfColorString(color)))
+        }
+        if let color = attrs[.backgroundColor] as? UDFColor {
+            out.append(UDFAttribute("background", udfColorString(color)))
+        }
+        if (attrs[.underlineStyle] as? Int ?? 0) != 0 { out.append(UDFAttribute("underline", "true")) }
+        if (attrs[.strikethroughStyle] as? Int ?? 0) != 0 { out.append(UDFAttribute("strikethrough", "true")) }
         return out
     }
+
+    // MARK: Paragraph mapping
+
+    private static func paragraphStyle(from attributes: [UDFAttribute]) -> NSParagraphStyle {
+        let style = NSMutableParagraphStyle()
+        if let raw = attributes.value("alignment"), let value = Int(raw) { style.alignment = alignment(fromUDF: value) }
+        if let value = doubleValue(attributes, "leftIndent") { style.headIndent = value }
+        if let value = doubleValue(attributes, "firstLineIndent") { style.firstLineHeadIndent = value }
+        if let value = doubleValue(attributes, "rightIndent") { style.tailIndent = -value }
+        if let value = doubleValue(attributes, "lineSpacing") { style.lineSpacing = value }
+        return style
+    }
+
+    private static func paragraphAttributes(from attrs: [NSAttributedString.Key: Any]) -> [UDFAttribute] {
+        var out = attrs[.udfParagraphMeta] as? [UDFAttribute] ?? []
+        guard let style = attrs[.paragraphStyle] as? NSParagraphStyle else { return out }
+        out.append(UDFAttribute("alignment", String(udfAlignment(from: style.alignment))))
+        if style.headIndent > 0 { out.append(UDFAttribute("leftIndent", String(Int(style.headIndent)))) }
+        if style.firstLineHeadIndent > 0 {
+            out.append(UDFAttribute("firstLineIndent", String(Int(style.firstLineHeadIndent))))
+        }
+        if style.tailIndent < 0 { out.append(UDFAttribute("rightIndent", String(Int(-style.tailIndent)))) }
+        if style.lineSpacing > 0 { out.append(UDFAttribute("lineSpacing", String(Int(style.lineSpacing)))) }
+        return out
+    }
+
+    private static func doubleValue(_ attributes: [UDFAttribute], _ name: String) -> CGFloat? {
+        guard let raw = attributes.value(name), let value = Double(raw) else { return nil }
+        return CGFloat(value)
+    }
+
+    private static func alignment(fromUDF value: Int) -> NSTextAlignment {
+        switch value {
+        case 1: return .center
+        case 2: return .right
+        case 3: return .justified
+        default: return .left
+        }
+    }
+
+    private static func udfAlignment(from alignment: NSTextAlignment) -> Int {
+        switch alignment {
+        case .center: return 1
+        case .right: return 2
+        case .justified: return 3
+        default: return 0
+        }
+    }
+
+    // MARK: Attachments
+
+    private static func blockAttachment(for element: UDFElement) -> NSAttributedString {
+        NSAttributedString(attachment: UDFElementAttachment(element: element))
+    }
+
+    private static func inlineImageAttachment(_ raw: UDFRawElement) -> NSAttributedString? {
+        guard let base64 = raw.attributes.value("imageData"),
+            let data = Data(base64Encoded: base64),
+            let image = platformImage(from: data)
+        else { return nil }
+        let attachment = NSTextAttachment()
+        setAttachmentImage(attachment, image)
+        return NSAttributedString(attachment: attachment)
+    }
+
+    private static func rawImage(from attachment: NSTextAttachment) -> UDFRawElement {
+        guard let data = attachmentPNGData(attachment) else {
+            return UDFRawElement(name: "image")
+        }
+        return UDFRawElement(name: "image", attributes: [UDFAttribute("imageData", data.base64EncodedString())])
+    }
 }
+
+/// Accumulates body elements while walking an edited attributed string: it keeps
+/// the flat document text, the offsets of each run, and flushes a paragraph on
+/// every newline or block element.
+private final class BodyBuilder {
+    private(set) var flatText = ""
+    private var elements: [UDFElement] = []
+    private var inlines: [UDFInline] = []
+    private var paragraphAttributes: [UDFAttribute] = []
+    private var hasContent = false
+
+    func addText(_ text: String, style: [UDFAttribute], paragraph: [UDFAttribute], field: [UDFAttribute]?) {
+        let segments = text.components(separatedBy: "\n")
+        for (index, segment) in segments.enumerated() {
+            if index > 0 { newline() }
+            if !segment.isEmpty { appendContent(segment, style: style, paragraph: paragraph, field: field) }
+        }
+    }
+
+    func addImage(_ raw: UDFRawElement) {
+        hasContent = true
+        inlines.append(.image(raw))
+    }
+
+    func addBlock(_ element: UDFElement) {
+        emitParagraph(force: false)
+        elements.append(element)
+    }
+
+    /// Emits a trailing paragraph (only if it holds content, or if the document
+    /// would otherwise be empty). A trailing newline leaves no content, so its
+    /// artifact paragraph is not emitted.
+    func finish() -> [UDFElement] {
+        emitParagraph(force: elements.isEmpty)
+        if flatText.hasSuffix("\n") { flatText.removeLast() }
+        return elements
+    }
+
+    private func newline() {
+        emitParagraph(force: true)
+        flatText += "\n"
+    }
+
+    private func appendContent(
+        _ text: String,
+        style: [UDFAttribute],
+        paragraph: [UDFAttribute],
+        field: [UDFAttribute]?
+    ) {
+        if !hasContent { paragraphAttributes = paragraph }
+        hasContent = true
+        let start = (flatText as NSString).length
+        flatText += text
+        let length = (text as NSString).length
+        if let field {
+            inlines.append(.field(UDFContentRun(startOffset: start, length: length, attributes: style + field)))
+        } else {
+            inlines.append(.content(UDFContentRun(startOffset: start, length: length, attributes: style)))
+        }
+    }
+
+    private func emitParagraph(force: Bool) {
+        if hasContent || force {
+            elements.append(.paragraph(UDFParagraph(attributes: paragraphAttributes, inlines: inlines)))
+        }
+        inlines = []
+        paragraphAttributes = []
+        hasContent = false
+    }
+}
+
+// MARK: Platform image helpers
+
+#if canImport(AppKit)
+private func platformImage(from data: Data) -> NSImage? { NSImage(data: data) }
+
+private func setAttachmentImage(_ attachment: NSTextAttachment, _ image: NSImage) { attachment.image = image }
+
+private func attachmentPNGData(_ attachment: NSTextAttachment) -> Data? {
+    guard let image = attachment.image, let tiff = image.tiffRepresentation,
+        let rep = NSBitmapImageRep(data: tiff)
+    else { return nil }
+    return rep.representation(using: .png, properties: [:])
+}
+#elseif canImport(UIKit)
+private func platformImage(from data: Data) -> UIImage? { UIImage(data: data) }
+
+private func setAttachmentImage(_ attachment: NSTextAttachment, _ image: UIImage) { attachment.image = image }
+
+private func attachmentPNGData(_ attachment: NSTextAttachment) -> Data? {
+    attachment.image?.pngData()
+}
+#endif

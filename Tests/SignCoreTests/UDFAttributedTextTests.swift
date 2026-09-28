@@ -9,68 +9,160 @@ import AppKit
 import UIKit
 #endif
 
-@Suite("UDF attributed text")
+@Suite("UDF attributed-text bridge")
 struct UDFAttributedTextTests {
-    @Test("document to attributed applies the run font")
-    func forward() throws {
-        var document = UDFDocument()
-        document.text = "abcABC"
-        document.styles = [UDFStyle(name: "default", attributes: [])]
-        let plainAttrs = [UDFAttribute("family", "Helvetica"), UDFAttribute("size", "12")]
-        let boldAttrs = plainAttrs + [UDFAttribute("bold", "true")]
-        document.elements = [
-            .paragraph(
-                UDFParagraph(
-                    attributes: [UDFAttribute("resolver", "default")],
-                    runs: [
-                        UDFContentRun(startOffset: 0, length: 3, attributes: plainAttrs),
-                        UDFContentRun(startOffset: 3, length: 3, attributes: boldAttrs),
-                    ]
-                ))
-        ]
+    /// Renders a document to an attributed string and rebuilds it, re-applying
+    /// the source document as the template so the page furniture survives.
+    private func roundTrip(_ document: UDFDocument) -> UDFDocument {
         let attributed = UDFAttributedText.attributedString(from: document)
-        #expect(attributed.string == "abcABC")
-
-        let boldFont = try #require(attributed.attribute(.font, at: 3, effectiveRange: nil) as? UDFFont)
-        #expect(fontTraits(boldFont).bold)
-        let plainFont = try #require(attributed.attribute(.font, at: 0, effectiveRange: nil) as? UDFFont)
-        #expect(fontTraits(plainFont).bold == false)
+        return UDFAttributedText.document(from: attributed, template: document)
     }
 
-    @Test("attributed to document preserves text and bold run")
-    func reverse() throws {
-        let plainFont = makeFont(family: "Helvetica", size: 12, bold: false, italic: false)
-        let boldFont = makeFont(family: "Helvetica", size: 12, bold: true, italic: false)
-        let plain = NSAttributedString(string: "Normal ", attributes: [.font: plainFont])
-        let bold = NSAttributedString(string: "Kalın", attributes: [.font: boldFont])
-        let composed = NSMutableAttributedString()
-        composed.append(plain)
-        composed.append(bold)
-
-        let document = UDFAttributedText.document(from: composed)
-        #expect(document.text == "Normal Kalın")
-
-        guard case .paragraph(let paragraph) = document.elements.first else {
-            Issue.record("paragraf yok")
-            return
+    private func firstParagraph(_ document: UDFDocument) -> UDFParagraph? {
+        for element in document.elements {
+            if case .paragraph(let paragraph) = element { return paragraph }
         }
-        let boldRun = paragraph.textRuns.first { $0.attributes.value("bold") == "true" }
-        #expect(boldRun != nil)
-        #expect(boldRun?.startOffset == 7)
+        return nil
     }
 
-    @Test("attributed round trip keeps the bold range")
-    func roundTrip() throws {
-        let plainSource = makeFont(family: "Helvetica", size: 13, bold: false, italic: false)
-        let boldSource = makeFont(family: "Helvetica", size: 13, bold: true, italic: false)
-        let composed = NSMutableAttributedString()
-        composed.append(NSAttributedString(string: "ab", attributes: [.font: plainSource]))
-        composed.append(NSAttributedString(string: "cd", attributes: [.font: boldSource]))
+    @Test("run styling and paragraph alignment survive a round trip")
+    func stylingSurvives() throws {
+        let run = UDFContentRun(
+            startOffset: 0,
+            length: 7,
+            attributes: [
+                UDFAttribute("family", "Helvetica"),
+                UDFAttribute("size", "14"),
+                UDFAttribute("bold", "true"),
+                UDFAttribute("underline", "true"),
+                UDFAttribute("foreground", "#FF0000"),
+            ]
+        )
+        let paragraph = UDFParagraph(attributes: [UDFAttribute("alignment", "2")], runs: [run])
+        let document = UDFDocument(
+            text: "Merhaba", styles: [UDFStyle(name: "default", attributes: [])], elements: [.paragraph(paragraph)])
 
-        let document = UDFAttributedText.document(from: composed)
-        let back = UDFAttributedText.attributedString(from: document)
-        #expect(back.string == "abcd")
-        let boldFont = try #require(back.attribute(.font, at: 2, effectiveRange: nil) as? UDFFont)
-        #expect(fontTraits(boldFont).bold)
+        let rebuilt = roundTrip(document)
+        #expect(rebuilt.text == "Merhaba")
+        let result = try #require(firstParagraph(rebuilt))
+        #expect(result.attributes.value("alignment") == "2")
+        let rebuiltRun = try #require(result.textRuns.first)
+        #expect(rebuiltRun.attributes.value("bold") == "true")
+        #expect(rebuiltRun.attributes.value("underline") == "true")
+        #expect(rebuiltRun.attributes.value("family") == "Helvetica")
+        let hex = try #require(rebuiltRun.attributes.value("foreground"))
+        let color = try #require(color(fromHex: hex))
+        let rgb = components(color)
+        #expect(rgb.red > 0.9)
+        #expect(rgb.green < 0.1)
+    }
+
+    @Test("an inline image survives a round trip")
+    func inlineImageSurvives() throws {
+        let base64 = try #require(onePixelPNGBase64())
+        let image = UDFRawElement(name: "image", attributes: [UDFAttribute("imageData", base64)])
+        let paragraph = UDFParagraph(attributes: [], inlines: [.image(image)])
+        let document = UDFDocument(text: "", elements: [.paragraph(paragraph)])
+
+        let rebuilt = roundTrip(document)
+        let result = try #require(firstParagraph(rebuilt))
+        let inlineImage = result.inlines.compactMap { inline -> UDFRawElement? in
+            if case .image(let raw) = inline { return raw }
+            return nil
+        }.first
+        let raw = try #require(inlineImage)
+        let data = try #require(raw.attributes.value("imageData").flatMap { Data(base64Encoded: $0) })
+        #expect(!data.isEmpty)
+    }
+
+    @Test("a table keeps its content and position as a block")
+    func tableSurvives() throws {
+        let cell = UDFCell(elements: [.paragraph(UDFParagraph(runs: []))])
+        let table = UDFTable(attributes: [UDFAttribute("border", "1")], rows: [UDFRow(cells: [cell, cell])])
+        let before = UDFParagraph(attributes: [], runs: [UDFContentRun(startOffset: 0, length: 3, attributes: [])])
+        let document = UDFDocument(text: "üst", elements: [.paragraph(before), .table(table)])
+
+        let rebuilt = roundTrip(document)
+        let tables = rebuilt.elements.compactMap { element -> UDFTable? in
+            if case .table(let value) = element { return value }
+            return nil
+        }
+        let rebuiltTable = try #require(tables.first)
+        #expect(rebuiltTable == table)
+        #expect(rebuilt.elements.count == 2)
+        if case .paragraph = rebuilt.elements[0] {} else { Issue.record("ilk element paragraf değil") }
+        if case .table = rebuilt.elements[1] {} else { Issue.record("ikinci element tablo değil") }
+    }
+
+    @Test("page format, styles, and headers are preserved from the template")
+    func templateFurniturePreserved() throws {
+        let pageFormat = [UDFAttribute("mediaSizeName", "A4"), UDFAttribute("leftMargin", "72")]
+        let styles = [
+            UDFStyle(name: "default", attributes: []),
+            UDFStyle(name: "hvl-default", attributes: [UDFAttribute("size", "12")]),
+        ]
+        let header = UDFSection(
+            attributes: [UDFAttribute("startPage", "1")], elements: [.paragraph(UDFParagraph(runs: []))])
+        let body = UDFParagraph(attributes: [], runs: [UDFContentRun(startOffset: 0, length: 5, attributes: [])])
+        let document = UDFDocument(
+            text: "gövde", pageFormat: pageFormat, styles: styles, elements: [.paragraph(body), .header(header)])
+
+        let rebuilt = roundTrip(document)
+        #expect(rebuilt.pageFormat == pageFormat)
+        #expect(rebuilt.styles == styles)
+        let headers = rebuilt.elements.compactMap { element -> UDFSection? in
+            if case .header(let section) = element { return section }
+            return nil
+        }
+        #expect(headers.first == header)
+    }
+
+    @Test("an empty document yields a single paragraph")
+    func emptyDocument() {
+        let rebuilt = roundTrip(UDFDocument())
+        #expect(rebuilt.elements.count == 1)
+        #expect(rebuilt.text.isEmpty)
+    }
+
+    // MARK: Helpers
+
+    private struct RGB {
+        var red: CGFloat
+        var green: CGFloat
+        var blue: CGFloat
+    }
+
+    private func components(_ color: UDFColor) -> RGB {
+        var red: CGFloat = 0
+        var green: CGFloat = 0
+        var blue: CGFloat = 0
+        var alpha: CGFloat = 0
+        #if canImport(AppKit)
+        (color.usingColorSpace(.sRGB) ?? color).getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        #elseif canImport(UIKit)
+        color.getRed(&red, green: &green, blue: &blue, alpha: &alpha)
+        #endif
+        return RGB(red: red, green: green, blue: blue)
+    }
+
+    private func onePixelPNGBase64() -> String? {
+        #if canImport(AppKit)
+        let image = NSImage(size: NSSize(width: 1, height: 1))
+        image.lockFocus()
+        NSColor.red.setFill()
+        NSRect(x: 0, y: 0, width: 1, height: 1).fill()
+        image.unlockFocus()
+        guard let tiff = image.tiffRepresentation, let rep = NSBitmapImageRep(data: tiff),
+            let png = rep.representation(using: .png, properties: [:])
+        else { return nil }
+        return png.base64EncodedString()
+        #elseif canImport(UIKit)
+        let renderer = UIGraphicsImageRenderer(size: CGSize(width: 1, height: 1))
+        let image = renderer.image { context in
+            UIColor.red.setFill()
+            context.fill(CGRect(x: 0, y: 0, width: 1, height: 1))
+        }
+        return image.pngData()?.base64EncodedString()
+        #endif
     }
 }

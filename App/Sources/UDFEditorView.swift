@@ -9,7 +9,7 @@ struct UDFEditorView: View {
 
     @State private var initial = NSAttributedString(string: "")
     @State private var documentID = UUID()
-    @State private var pageFormat: [UDFAttribute] = []
+    @State private var template = UDFDocument()
     @State private var fileName = "belge.udf"
     @State private var fontFamily = "Helvetica"
     @State private var fontSize: CGFloat = 13
@@ -160,7 +160,7 @@ struct UDFEditorView: View {
 
     private func newDocument() {
         initial = NSAttributedString(string: "", attributes: [.font: defaultFont])
-        pageFormat = []
+        template = UDFDocument(styles: [UDFStyle(name: "default", attributes: [])])
         fileName = "belge.udf"
         message = nil
         documentID = UUID()
@@ -174,7 +174,7 @@ struct UDFEditorView: View {
             let data = try Data(contentsOf: url)
             let document = try UDFReader.read(udf: data)
             initial = UDFAttributedText.attributedString(from: document)
-            pageFormat = document.pageFormat
+            template = document
             fileName = url.lastPathComponent
             message = nil
             documentID = UUID()
@@ -185,7 +185,7 @@ struct UDFEditorView: View {
 
     private func save() {
         let attributed = controller.attributedString()
-        let document = UDFAttributedText.document(from: attributed, pageFormat: pageFormat)
+        let document = UDFAttributedText.document(from: attributed, template: template)
         do {
             let data = try UDFWriter.write(document)
             exportDocument = UDFFileDocument(data: data)
