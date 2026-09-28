@@ -53,8 +53,8 @@ struct UDFAttributedTextTests {
         #expect(rebuiltRun.attributes.value("family") == "Helvetica")
         #expect(rebuiltRun.attributes.value("baselineOffset") == "5")
         let hex = try #require(rebuiltRun.attributes.value("foreground"))
-        let color = try #require(color(fromHex: hex))
-        let rgb = components(color)
+        let parsed = try #require(color(fromHex: hex))
+        let rgb = components(parsed)
         #expect(rgb.red > 0.9)
         #expect(rgb.green < 0.1)
     }
