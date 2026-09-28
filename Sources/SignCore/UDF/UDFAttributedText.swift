@@ -297,7 +297,7 @@ extension UDFAttributedText {
 
     private static func inlineImageAttachment(_ raw: UDFRawElement) -> NSAttributedString? {
         guard let base64 = raw.attributes.value("imageData"),
-            let data = Data(base64Encoded: base64),
+            let data = Data(base64Encoded: base64, options: .ignoreUnknownCharacters),
             let image = platformImage(from: data)
         else { return nil }
         let attachment = NSTextAttachment()
